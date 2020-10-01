@@ -54,7 +54,7 @@ user_info = {
   
 }
 char_info = {
-    "name" : "Ellie",
+    "name" : "Ashe",
     "outfits" : [],
     "layer_list": [],
     "visible_hair":''
@@ -100,8 +100,9 @@ class DepsGraphUpdates():
         c = Nextr_Rig.get_active_outfit()
         nextr_props = Nextr_Rig.get_rig().data.nextrrig_properties 
         for o in c.objects:
-            o.hide_render = o.hide_viewport = not nextr_props[o.name_full+"_outfit_toggle"]
-            Nextr_Rig.update_object_mask(o)
+            if o.name_full+"_outfit_toggle" in nextr_props:
+                o.hide_render = o.hide_viewport = not nextr_props[o.name_full.replace(" ","_")+"_outfit_toggle"]
+                Nextr_Rig.update_object_mask(o)
     @classmethod
     def update_bone_layers(self):
         rig = Nextr_Rig.get_rig()
@@ -149,12 +150,6 @@ class Nextr_Rig(bpy.types.PropertyGroup):
         if bpy.data.objects[char_info['name']+" Body"]:
             return bpy.data.objects[char_info['name']+" Body"]
         return False
-
-        
-    def test_update_func(self, context):
-        rig = self.get_rig()
-        rig.data['update'] = 1
-        # rig.data['nextrrig_properties']['test_bool'] = not rig.data['nextrrig_properties']['test_bool']
        
     @classmethod
     def __init__(self):
@@ -190,6 +185,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 mat = o.active_material
                 for node in mat.node_tree.nodes:
                     if char_info['name'] in node.name:
+                        print(node.name)
                         attribute_setting = node.name[len(char_info['name']):][1:-1].split(',')
                         default = node.outputs[0].default_value
                         if attribute_setting[2] == "toggle":
@@ -215,7 +211,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
         rig = self.get_rig()
         nextr_props = rig.data
         for index in range(32):
-            if  nextr_props['rig_layers']:
+            if "rig_layers" in  nextr_props:
                 layers =nextr_props["rig_layers"][1:-1].split(",")  
                 if len(layers) > index and layers[index] != "False":
                     self.ui_setup_toggle(str(index)+"_layer_toggle", self.update_bone_layers, layers[index], "Enables/Disables bone layer", rig.data.layers[index])
@@ -287,7 +283,6 @@ class Nextr_Rig(bpy.types.PropertyGroup):
             setattr(self, property_name, prop) 
     @classmethod
     def ui_setup_float(self, property_name, update_function, name = "Name", description = 'Empty description', default = 0.0):
-        print(default, property_name)
         rig_data = self.get_rig().data
         if hasattr(rig_data, 'nextrrig_properties'):    
             rig_data.nextrrig_properties[property_name] =  default
@@ -320,6 +315,8 @@ class Nextr_Rig(bpy.types.PropertyGroup):
         body = self.get_body_object()
         if clothing.name+" Mask" in body.modifiers:
             body.modifiers[clothing.name+" Mask"].show_render = body.modifiers[clothing.name+" Mask"].show_viewport = not clothing.hide_render
+        elif clothing.name+"_mask" in body.modifiers:
+            body.modifiers[clothing.name+"_mask"].show_render = body.modifiers[clothing.name+"_mask"].show_viewport = not clothing.hide_render
               
     def update_outfit_piece(self, context):
         c = self.get_active_outfit()
@@ -359,9 +356,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
             if context.object.name_full in collection.objects:
                 hair_collection = [*collection.children[collection.name+" Hair"].children, *collection.children[collection.name+" Hair"].objects]
                 for c in hair_collection:
-                    print(c.name)
                     c.hide_viewport = c.hide_render = True
-
                 index = nextr_props['hair_enum']
                 hair_collection[index].hide_viewport = hair_collection[index].hide_render = False
     def update_attributes(self, context):
@@ -506,5 +501,3 @@ register()
 Nextr_Rig.__init__()
 
 bpy.app.handlers.depsgraph_update_post.append(DepsGraphUpdates.post_depsgraph_update)
-
-
