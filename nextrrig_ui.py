@@ -34,8 +34,8 @@ bl_info = {
     "name": "Nextr Rig UI",
     "description": "Script for creating Nextr Rig UI",
     "author": "Nextr3D",
-    "version": (3, 0, 0),
-    "blender": (2, 90, 0)
+    "version": (3, 1, 1),
+    "blender": (2, 90, 1)
 }
 #adds credits to the Links panel
 user_info = {
@@ -54,7 +54,7 @@ user_info = {
   
 }
 char_info = {
-    "name" : "Ashe",
+    "name" : "Ellie",
     "outfits" : [],
     "layer_list": [],
     "visible_hair":''
@@ -100,7 +100,7 @@ class DepsGraphUpdates():
         c = Nextr_Rig.get_active_outfit()
         nextr_props = Nextr_Rig.get_rig().data.nextrrig_properties 
         for o in c.objects:
-            if o.name_full+"_outfit_toggle" in nextr_props:
+            if o.name_full.replace(" ","_")+"_outfit_toggle" in nextr_props:
                 o.hide_render = o.hide_viewport = not nextr_props[o.name_full.replace(" ","_")+"_outfit_toggle"]
                 Nextr_Rig.update_object_mask(o)
     @classmethod
@@ -176,7 +176,6 @@ class Nextr_Rig(bpy.types.PropertyGroup):
     @classmethod
     def get_all_attributes(self):
         rig = self.get_rig()
-        # path to attribute, holy shit! bpy.data.materials['body_arms'].node_tree.nodes['Ellie[UI_PT_BodyPanel,Tatto,toggle]'].outputs['Value'].default_value
         objects = get_objects_from_collection_recursive(bpy.data.collections[char_info['name']])
         for o in objects:
             previous_index = o.active_material_index
@@ -219,6 +218,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 self.ui_setup_toggle(str(index)+"_layer_toggle", self.update_bone_layers, "Layer - "+str((index + 1)), "Enables/Disables bone layer", rig.data.layers[index])
     @classmethod
     def get_outfits(self):
+        "gets all of the outfits, name of the collections not containing hidden"
         collections = bpy.data.collections
         rig = self.get_rig()
         for collection in collections:
@@ -253,10 +253,9 @@ class Nextr_Rig(bpy.types.PropertyGroup):
 
     @classmethod
     def ui_setup_enum(self, property_name, update_function, name = "Name", description = "Empty description", items = [], default = 0):
-                
+        "method for easier creation of enums (selects)"      
         rig_data = self.get_rig().data
         if hasattr(rig_data, 'nextrrig_properties'):
-          
             rig_data['nextrrig_properties'][property_name] = default  
             prop =  EnumProperty(
                 name = name,
@@ -269,8 +268,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
             setattr(self, property_name, prop) 
     @classmethod
     def ui_setup_toggle(self, property_name,update_function,name = 'Name', description = 'Empty description', default = False):           
-#       method for easier creation of toggles (buttons)
-
+        "method for easier creation of toggles (buttons)"
         rig_data = self.get_rig().data
         if hasattr(rig_data, 'nextrrig_properties'):    
             rig_data.nextrrig_properties[property_name] =  default
@@ -283,6 +281,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
             setattr(self, property_name, prop) 
     @classmethod
     def ui_setup_float(self, property_name, update_function, name = "Name", description = 'Empty description', default = 0.0):
+        "method for easier creation of floats (sliders)"
         rig_data = self.get_rig().data
         if hasattr(rig_data, 'nextrrig_properties'):    
             rig_data.nextrrig_properties[property_name] =  default
@@ -296,6 +295,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
 
     @classmethod
     def get_active_outfit(self):
+        "return name of the active outfit (collection name)"
         collections = bpy.data.collections
         rig = self.get_rig()
         data = rig.data
@@ -311,6 +311,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 return outfit_collection[index]
     @classmethod
     def update_object_mask(self, clothing):
+        "updates all of the masks on the body"        
         rig = self.get_rig()
         body = self.get_body_object()
         if clothing.name+" Mask" in body.modifiers:
@@ -385,7 +386,6 @@ class UI_PT_NextrRigPanel(bpy.types.Panel):
    
     @classmethod
     def poll(cls, context):
-        #return True
         if(context.object != None and context.object in Nextr_Rig.get_rigs()):
             return True
 
