@@ -1,35 +1,3 @@
-"""
-# How to #
-    # Naming
-
-        Set the name in the char_info, this name represents name of the master Collection and name of the rig and name of the body object(it also has to have _body suffix), it's case sensitive
-
-        For example:
-            char_info = {
-                "name": "Ellie"
-            }
-            collection name : Ellie
-            rig name : Ellie
-            body name: Ellie Body
-            outfit collection name: Ellie Outfits
-            hair collection name: Ellie Hair
-            
-
-    # Outfits
-        Outfits are located in the '[char_info["name"]] Outifts' collection ie 'Ellie Outfits'
-        Each outfit is also located in its own collection which can be named however you want but keep in mind that this name is also going to be used in the UI
-    # Rig layers
-        to use named rig layers you have to add custom prop to the armature.
-        Select aramture -> click Object Data Properties (the one with the stickman icon) -> scroll down to Custom Properties sub menu -> click Add 
-        -> name the prop 'rig_layers' and insert this pattern: [Face,False,Arms]
-        This pattern results in a creation of two buttons. Keyword False skips one layer.
-        Layers are from 0 - 31, first row is 0 - 15.
-        Those two buttons are going to be toggling only the first (0) and the third (2) layer
-    # Hairdos
-        you must create collection containing hair named as stated above, this collection can either containe objects or another collections if the hairdo is made of separate
-        models
-
-"""
 bl_info = {
     "name": "Nextr Rig UI",
     "description": "Script for creating Nextr Rig UI",
@@ -47,22 +15,15 @@ user_info = {
     "Model by Nextr3D":{
         "Twitter" : ('USER','twitter.com/nextr3d'),
         "Patreon" : ('FUND', 'patreon.com/nextr3d')
-    },
-    "Original model by Naughty Dog":{
-        "Website": ('URL', 'naughtydog.com')
     }
-  
 }
 char_info = {
-    "name" : "Ellie",
+    "name" : "set_your_character_name",
     "outfits" : [],
     "layer_list": [],
     "visible_hair":''
 }
-
-
 import bpy
-
 from bpy.props import (StringProperty,
                        BoolProperty,
                        IntProperty,
@@ -94,7 +55,6 @@ class DepsGraphUpdates():
             o.update_outfit_piece()
             o.update_bone_layers()
             o.update_hair()
-
     @classmethod
     def update_outfit_piece(self):
         c = Nextr_Rig.get_active_outfit()
@@ -138,7 +98,6 @@ class Nextr_Rig(bpy.types.PropertyGroup):
     @classmethod
     def get_rig(self):
         "returns currently selected rig"
-         
         active_object = bpy.context.view_layer.objects.active
         if hasattr(active_object, 'type'):
             if active_object.type == 'ARMATURE' and 'nextrrig_properties' in active_object.data:
@@ -154,16 +113,13 @@ class Nextr_Rig(bpy.types.PropertyGroup):
     @classmethod
     def __init__(self):
         "prepares data for the panel"
-        print("----------------------------------------------------------------------")
         start_time = time.time()
-        print('Building rig.')
         selected_object =  bpy.context.view_layer.objects.active #save the selected object
         self.select_nextrrig_armature(self) #select one of nextr rig aramtures
         rig = self.get_rig()
         if rig:
             rig.data['update'] = 0
             self.build_ui()
-        
         bpy.context.view_layer.objects.active = selected_object #select the originaly selected object
         print('Building took:', time.time() - start_time,'seconds')
     @classmethod
@@ -184,11 +140,12 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 mat = o.active_material
                 for node in mat.node_tree.nodes:
                     if char_info['name'] in node.name:
-                        print(node.name)
                         attribute_setting = node.name[len(char_info['name']):][1:-1].split(',')
                         default = node.outputs[0].default_value
-                        if attribute_setting[2] == "toggle":
+                        if attribute_setting[2] == "t":
                             self.ui_setup_toggle(node.name, self.update_attributes, attribute_setting[1], "Update "+attribute_setting[1]+" attribute", default == 1.0)
+                        elif attribute_setting[2] == "i":
+                            self.ui_setup_int(node.name, self.update_attributes, attribute_setting[1], "Update "+attribute_setting[1]+" attribute", int(default), int(attribute_setting[3]), int(attribute_setting[4]))
                         else:
                             self.ui_setup_float(node.name, self.update_attributes, attribute_setting[1], "Update "+attribute_setting[1]+" attribute", default)
                 o.active_material_index = index = index + 1
@@ -196,11 +153,13 @@ class Nextr_Rig(bpy.types.PropertyGroup):
     @classmethod
     def get_hair(self):
         if char_info['name']+" Hair" in bpy.data.collections:
+            rig = self.get_rig()
+            self.ui_setup_toggle("hair_lock", None, "", "Locks hair so it's not changed by the outfit", rig.data.nextrrig_properties["hair_lock"])
             hair_collection = bpy.data.collections[char_info['name']+" Hair"]
             items = [*hair_collection.children, *hair_collection.objects]
             names = [o.name for o in items]
             default = 0
-            rig = self.get_rig()
+
             if hasattr(rig.data.nextrrig_properties, "hair_enum"):
                 default = rig.data.nextrrig_properties["hair_enum"]
             self.ui_setup_enum('hair_enum', None, "Hairdos", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
@@ -229,8 +188,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 for item in outfits:
                     if "hidden" not in item:
                         available_outfits.append(item)
-                print("Available outfits:", available_outfits)
-                self.ui_setup_enum("outfit_enum", self.update_outfits, "Outfit", "Available outfits", self.create_enum_options(available_outfits))
+                self.ui_setup_enum("outfit_enum", self.update_outfits, "Outfit", "Available outfits", self.create_enum_options(available_outfits), rig.data.nextrrig_properties['outfit_enum'])
                 self.ui_setup_outfit_buttons(outfit_collection.children.keys())
     @classmethod
     def ui_setup_outfit_buttons(self, collections):
@@ -279,6 +237,23 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 default =  default
             )
             setattr(self, property_name, prop) 
+
+    @classmethod
+    def ui_setup_int(self, property_name,update_function,name = 'Name', description = 'Empty description', default = 0, min = 0, max = 1):           
+        "method for easier creation of ints (sliders)"
+        rig_data = self.get_rig().data
+        if hasattr(rig_data, 'nextrrig_properties'):    
+            rig_data.nextrrig_properties[property_name] =  default
+            prop =  IntProperty(
+                name = name,
+                description = description,
+                update = update_function,
+                default =  default,
+                max = max,
+                min = min
+            )
+            setattr(self, property_name, prop) 
+
     @classmethod
     def ui_setup_float(self, property_name, update_function, name = "Name", description = 'Empty description', default = 0.0):
         "method for easier creation of floats (sliders)"
@@ -309,6 +284,15 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                     index = index + 1
                         
                 return outfit_collection[index]
+    @classmethod
+    
+    def render_attribute(self, item):
+        attribute_setting = item[len(char_info['name']):][1:-1].split(',')
+        rig = self.get_rig()
+        if len(attribute_setting) == 7:
+            if attribute_setting[5] == "Outfits":
+                return attribute_setting[6] == bpy.data.collections[rig.name+" Outfits"].children[rig.data.nextrrig_properties["outfit_enum"]].name
+        return True
     @classmethod
     def update_object_mask(self, clothing):
         "updates all of the masks on the body"        
@@ -341,8 +325,21 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                     index = index + 1
                 visible_collection = outfit_collection[index]
                 visible_collection.hide_render = visible_collection.hide_viewport = False
-        return None
+                if not nextr_props["hair_lock"]:
+                    self.update_hair_by_outfit(self, context.object.name_full, visible_collection.name)
+    def update_hair_by_outfit(self,context,name, outfit_name):
+        "updates hairdos when hair_enum is not locked"
+        hairdos = bpy.data.collections[name+" Hair"].objects
+        for i in range(0,len(hairdos)):
+            if "outfit" in hairdos[i]:
+                if hairdos[i]["outfit"] == outfit_name:                 
+                    self.get_rig().data.nextrrig_properties.hair_enum = "OP"+str(i)                                     
+            else:
+                if outfit_name in hairdos[i].name:
+                    self.get_rig().data.nextrrig_properties.hair_enum = "OP"+str(i)
+
     def update_bone_layers(self, context):
+        "updates bone layers"
         rig = self.get_rig()
         for index in range(32):
             if hasattr(rig.data.nextrrig_properties, str(index)+"_layer_toggle"):
@@ -350,6 +347,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
             else:
                 rig.data.layers[index] = False
     def update_hair(self, context):
+        "updates hairdos"
         collections = bpy.data.collections
         data = context.object.data
         nextr_props = data.nextrrig_properties
@@ -361,6 +359,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 index = nextr_props['hair_enum']
                 hair_collection[index].hide_viewport = hair_collection[index].hide_render = False
     def update_attributes(self, context):
+        "updates all of the attributes in the materials belonging to the rig"
         rig = self.get_rig()
         # path to attribute, holy shit! bpy.data.materials['body_arms'].node_tree.nodes['Ellie[UI_PT_BodyPanel,Tatto,toggle]'].outputs['Value'].default_value
         objects = get_objects_from_collection_recursive(bpy.data.collections[char_info['name']])
@@ -373,12 +372,9 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 for node in mat.node_tree.nodes:
                     if node.name in rig.data.nextrrig_properties:
                         node.outputs[0].default_value = rig.data.nextrrig_properties[node.name]
-
                 o.active_material_index = index = index + 1
             o.active_material_index = previous_index
-# -------
 #  Panels
-# -------
 class UI_PT_NextrRigPanel(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -389,10 +385,10 @@ class UI_PT_NextrRigPanel(bpy.types.Panel):
         if(context.object != None and context.object in Nextr_Rig.get_rigs()):
             return True
 
-class UI_PT_OutiftsPanel(UI_PT_NextrRigPanel):
+class UI_PT_OutfitsPanel(UI_PT_NextrRigPanel):
     "Outfits panel"
     bl_label = "Outfits"
-    bl_idname = "UI_PT_OutiftsPanel"
+    bl_idname = "UI_PT_OutfitsPanel"
     
     def draw(self, context):
         layout = self.layout
@@ -410,12 +406,32 @@ class UI_PT_OutiftsPanel(UI_PT_NextrRigPanel):
         column = box.column()
         outfit_collection = outfits[index]
         for item in outfit_collection.objects:
-            column.prop(nextr_props, item.name_full.replace(" ", "_")+"_outfit_toggle", toggle=True)
+            name = item.name_full.replace(" ", "_")+"_outfit_toggle"
+            if hasattr(nextr_props, name):
+                column.prop(nextr_props, name, toggle=True)
         # Hair box, renders only if hair enum exists
         if hasattr(nextr_props, "hair_enum"):
             box = layout.box()
             box.label(text="Hair", icon="HAIR")
-            box.prop(nextr_props, "hair_enum")
+            row = box.row(align=True)
+            row.prop(nextr_props, "hair_enum")
+
+            icon = "UNLOCKED"
+            if nextr_props["hair_lock"]:
+                icon = "LOCKED"
+            row.prop(nextr_props,"hair_lock", toggle=True, icon=icon)
+        
+        items = []
+        for item in nextr_props.keys():
+            if item in nextr_props and self.bl_idname[6:] in item :
+                items.append(item)
+        if len(items):
+            box = layout.box()
+            box.label(text="Attributes", icon="PRESET")
+            for item in items:
+                
+                if hasattr(nextr_props, item) and Nextr_Rig.render_attribute(item):
+                    box.prop(nextr_props, item, toggle=True)
 class UI_PT_RigLayers(UI_PT_NextrRigPanel):
     "Rig layers panel"
     bl_label = "Rig Layers"
@@ -457,14 +473,17 @@ class UI_PT_BodyPanel(UI_PT_NextrRigPanel):
     def draw(self, context):
         layout = self.layout
         nextr_props = context.object.data.nextrrig_properties
-        box = layout.box()
-        box.label(text="Attributes", icon="PRESET")
 
+        items = []
         for item in nextr_props.keys():
-            if item in nextr_props and self.bl_idname in item :
-                box.prop(nextr_props, item, toggle=True)
-
-
+            if item in nextr_props and self.bl_idname[6:] in item :
+                items.append(item)
+        if len(items):
+            box = layout.box()
+            box.label(text="Attributes", icon="PRESET")
+            for item in items:
+                if hasattr(nextr_props, item):
+                    box.prop(nextr_props, item, toggle=True)
 
 class OPS_PT_Empty(bpy.types.Operator):
     "for empty operator used only as text"
@@ -477,19 +496,17 @@ class OPS_PT_Empty(bpy.types.Operator):
 
 classes = (
     Nextr_Rig,
-    UI_PT_OutiftsPanel,
+    UI_PT_OutfitsPanel,
     UI_PT_BodyPanel,
     UI_PT_RigLayers,
     UI_PT_InfoPanel,
     OPS_PT_Empty
 )
 
-
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-
     bpy.types.Armature.nextrrig_properties = bpy.props.PointerProperty(type=Nextr_Rig)
     
 def unregister():
@@ -499,5 +516,4 @@ def unregister():
 
 register()
 Nextr_Rig.__init__()
-
 bpy.app.handlers.depsgraph_update_post.append(DepsGraphUpdates.post_depsgraph_update)
