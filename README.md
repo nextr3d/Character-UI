@@ -17,7 +17,8 @@ char_info = {
 - **body name:** Ellie Body
 - **outfit collection name:** Ellie Outfits
 - **hair collection name:** Ellie Hair
-    
+
+Next step is to add a custom property **nextrrig_properties** to the rig
 
 # Outfits
 Outfits are located in a collection called after the character with Outfits suffix
