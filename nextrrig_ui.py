@@ -44,41 +44,6 @@ def get_objects_from_collection_recursive(collection):
         new_objects = [*new_objects, *get_objects_from_collection_recursive(coll)]
     return new_objects
 
-class DepsGraphUpdates():
-    def post_depsgraph_update(self, context):
-        rig = Nextr_Rig.get_rig()
-        if hasattr(rig, "data") and hasattr(rig.data, "nextrrig_properties"):
-            o = DepsGraphUpdates()
-            o.update_outfit_piece()
-            # o.update_bone_layers() it probably doesn't have to be here, at least for this version
-            o.update_hair()
-    @classmethod
-    def update_outfit_piece(self):
-        c = Nextr_Rig.get_active_outfit()
-        if c:
-            nextr_props = Nextr_Rig.get_rig().data.nextrrig_properties 
-            for o in c.objects:
-                name = o.name_full.replace(" ","_")+"_outfit_toggle"
-                if name in nextr_props:
-                    if o.hide_render == nextr_props[name]:
-                        o.hide_render = o.hide_viewport = not nextr_props[name]
-                        Nextr_Rig.update_object_mask(o)
-    @classmethod
-    def update_bone_layers(self):
-        rig = Nextr_Rig.get_rig()
-        for index in range(32):
-            if hasattr(rig.data.nextrrig_properties, str(index)+"_layer_toggle"):
-                rig.data.nextrrig_properties[str(index)+"_layer_toggle"] = rig.data.layers[index]
-    @classmethod
-    def update_hair(self):
-        rig = Nextr_Rig.get_rig()
-        if hasattr(rig.data.nextrrig_properties, "hair_enum"):
-            hair_collection = bpy.data.collections[rig.name+" Hair"]
-            items = [*hair_collection.children, *hair_collection.objects]
-            for item in items:
-                if not item.hide_viewport:
-                    item.hide_viewport = item.hide_render = True
-            items[rig.data.nextrrig_properties['hair_enum']].hide_render = items[rig.data.nextrrig_properties['hair_enum']].hide_viewport = False
 class Nextr_Rig(bpy.types.PropertyGroup):
     """ class handling all of the UI creation """
 
@@ -173,7 +138,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
 
             if hasattr(rig.data.nextrrig_properties, "hair_enum"):
                 default = rig.data.nextrrig_properties["hair_enum"]
-            self.ui_setup_enum('hair_enum', None, "Hairdos", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
+            self.ui_setup_enum('hair_enum', self.update_hair, "Hairdos", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
     @classmethod
     def get_bone_layers(self):
         "creates buttons for switching bone layers"
@@ -237,7 +202,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 default = False
                 if o.name_full.replace(" ", "_")+"_outfit_toggle" in rig.data.nextrrig_properties:
                     default = rig.data['nextrrig_properties'][o.name_full.replace(" ", "_")+"_outfit_toggle"]
-                self.ui_setup_toggle(o.name_full.replace(" ", "_")+"_outfit_toggle", None, o.name_full, "Toggles outfit piece on and off", default)
+                self.ui_setup_toggle(o.name_full.replace(" ", "_")+"_outfit_toggle", self.update_outfit_piece, o.name_full, "Toggles outfit piece on and off", default)
 
     "method for creating options for blender UI enums"
     @staticmethod
@@ -324,8 +289,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                             
                     return outfit_collection[index]
                 return False
-    @classmethod
-    
+    @classmethod 
     def render_attribute(self, item):
         attribute_setting = item[len(char_info['name']):][1:-1].split(',')
         rig = self.get_rig()
@@ -341,14 +305,23 @@ class Nextr_Rig(bpy.types.PropertyGroup):
             body.modifiers[clothing.name+" Mask"].show_render = body.modifiers[clothing.name+" Mask"].show_viewport = not clothing.hide_render
         elif clothing.name+"_mask" in body.modifiers:
             body.modifiers[clothing.name+"_mask"].show_render = body.modifiers[clothing.name+"_mask"].show_viewport = not clothing.hide_render
-              
+    @classmethod 
+    def update_object_mask_with_value(self, clothing, value):
+        body = self.get_body_object()
+        if clothing.name+" Mask" in body.modifiers:
+            body.modifiers[clothing.name+" Mask"].show_render = body.modifiers[clothing.name+" Mask"].show_viewport = value
+        elif clothing.name+"_mask" in body.modifiers:
+            body.modifiers[clothing.name+"_mask"].show_render = body.modifiers[clothing.name+"_mask"].show_viewport = value
     def update_outfit_piece(self, context):
         c = self.get_active_outfit()
         if c:
             nextr_props = self.get_rig().data.nextrrig_properties 
             for o in c.objects:
-                o.hide_render = o.hide_viewport = not nextr_props[o.name_full+"_outfit_toggle"]
-                self.update_object_mask(o)
+                name = o.name_full.replace(" ","_")+"_outfit_toggle"
+                if name in nextr_props:
+                    if o.hide_render == nextr_props[name]:
+                        o.hide_render = o.hide_viewport = not nextr_props[name]
+                        self.update_object_mask(o)
         
     def update_outfits(self, context):
         collections = bpy.data.collections
@@ -359,25 +332,28 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 outfit_collection = collection.children[collection.name+" Outfits"].children
                 for c in outfit_collection:
                     c.hide_viewport = c.hide_render = True
+                    for o in c.objects.values():
+                        self.update_object_mask_with_value(o, False)
                 index = nextr_props['outfit_enum']
                 outfits = collection.children[collection.name+" Outfits"].children
                 while "hidden" in outfits.values()[index].name_full:
                     index = index + 1
                 visible_collection = outfit_collection[index]
                 visible_collection.hide_render = visible_collection.hide_viewport = False
+                for o in visible_collection.objects.values():
+                    self.update_object_mask(o)
                 if not nextr_props["hair_lock"]:
                     self.update_hair_by_outfit(self, context.object.name_full, visible_collection.name)
     def update_hair_by_outfit(self,context,name, outfit_name):
         "updates hairdos when hair_enum is not locked"
-        hairdos = bpy.data.collections[name+" Hair"].objects
-        for i in range(0,len(hairdos)):
-            if "outfit" in hairdos[i]:
-                if hairdos[i]["outfit"] == outfit_name:                 
-                    self.get_rig().data.nextrrig_properties.hair_enum = "OP"+str(i)                                     
+        collection = bpy.data.collections[char_info['name']+" Hair"]
+        hairdos = [*collection.children, *collection.objects]
+        for i in range(len(hairdos)):
+            if outfit_name+" Hair" == hairdos[i].name:
+                self.get_rig().data.nextrrig_properties["hair_enum"] = i
+                hairdos[i].hide_viewport = hairdos[i].hide_render = False
             else:
-                if outfit_name in hairdos[i].name:
-                    self.get_rig().data.nextrrig_properties.hair_enum = "OP"+str(i)
-
+                hairdos[i].hide_viewport = hairdos[i].hide_render = True
     def update_bone_layers(self, context):
         "updates bone layers"
         rig = self.get_rig()
@@ -627,4 +603,4 @@ def unregister():
 
 register()
 Nextr_Rig.__init__()
-bpy.app.handlers.depsgraph_update_post.append(DepsGraphUpdates.post_depsgraph_update)
+
