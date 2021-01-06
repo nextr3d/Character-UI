@@ -2,7 +2,7 @@ bl_info = {
     "name": "Nextr Rig UI",
     "description": "Script for creating Nextr Rig UI",
     "author": "Nextr3D",
-    "version": (3, 2, 0),
+    "version": (3, 3, 0),
     "blender": (2, 90, 1)
 }
 #adds credits to the Links panel
@@ -167,6 +167,10 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                 default_value = 0
                 if 'outfit_enum' in rig.data.nextrrig_properties:
                     default_value = rig.data.nextrrig_properties['outfit_enum']
+                    if default_value > len(available_outfits) - 1:
+                        default_value = len(available_outfits) - 1 
+                print(available_outfits)
+                print(default_value)
                 self.ui_setup_enum("outfit_enum", self.update_outfits, "Outfit", "Available outfits", self.create_enum_options(available_outfits), default_value)
                 self.ui_setup_outfit_buttons(outfit_collection.children.keys())
     @classmethod
@@ -312,6 +316,11 @@ class Nextr_Rig(bpy.types.PropertyGroup):
             body.modifiers[clothing.name+" Mask"].show_render = body.modifiers[clothing.name+" Mask"].show_viewport = value
         elif clothing.name+"_mask" in body.modifiers:
             body.modifiers[clothing.name+"_mask"].show_render = body.modifiers[clothing.name+"_mask"].show_viewport = value
+    @classmethod
+    def update_body_shapeskeys(self, clothing):
+        body = self.get_body_object()
+        if clothing.name + " Shape" in body.data.shape_keys.key_blocks:
+            body.data.shape_keys.key_blocks[clothing.name+" Shape"].value = not clothing.hide_render
     def update_outfit_piece(self, context):
         c = self.get_active_outfit()
         if c:
@@ -322,6 +331,7 @@ class Nextr_Rig(bpy.types.PropertyGroup):
                     if o.hide_render == nextr_props[name]:
                         o.hide_render = o.hide_viewport = not nextr_props[name]
                         self.update_object_mask(o)
+                        self.update_body_shapeskeys(o)
         
     def update_outfits(self, context):
         collections = bpy.data.collections
@@ -517,7 +527,7 @@ class UI_PT_BodyPanel(UI_PT_NextrRigPanel):
         
 class UI_PT_BodyPhysicsPanel(UI_PT_NextrRigPanel):
     "Physics Sub-Panel"
-    bl_label = "Physics"
+    bl_label = "Physics (Experimental)"
     bl_idname = "UI_PT_BodyPhysicsPanel"
     bl_parent_id = "UI_PT_BodyPanel"
 
@@ -529,10 +539,13 @@ class UI_PT_BodyPhysicsPanel(UI_PT_NextrRigPanel):
                 box = layout.box()
                 baked = False
                 info = ""
+                visible = False
+                m_name = ""
                 for m in o.modifiers:
                     if m.type == "CLOTH":
                         baked = m.point_cache.is_baked
                         info = m.point_cache.info
+                        visible = m.show_render                      
                 box.label(text=o.name.replace("Cage","").replace(".L", "Left").replace(".R","Right"), icon="PREFERENCES")
                 column = box.column(align=True)
                 column.active = not baked
@@ -541,8 +554,8 @@ class UI_PT_BodyPhysicsPanel(UI_PT_NextrRigPanel):
                 column.prop(nextr_props, o.name.replace(" ","_")+"_frame_start")
                 column.prop(nextr_props, o.name.replace(" ","_")+"_frame_end")
                 box.operator('nextr.bake', text="Delete Bake" if baked else "Bake").object_name = o.name
+                box.operator('nextr.hide_modifier', text="Modifier enabled" if visible else "Modifier disabled", icon="HIDE_OFF" if visible else "HIDE_ON", depress=True if visible else False ).object_name = o.name          
                 box.operator('nextr.empty', text=info, icon="INFO", depress=True, emboss=False)
-
                 
 class OPS_PT_Empty(bpy.types.Operator):
     "for empty operator used only as text"
@@ -573,7 +586,19 @@ class OPS_PT_BakePhysics(bpy.types.Operator):
 class OPS_PT_HideModifier(bpy.types.Operator):
     bl_idname = "nextr.hide_modifier"
     bl_description = "Hides modifier"
-    
+    bl_label = "Hide modifier"
+
+    object_name = bpy.props.StringProperty()
+
+    def execute(self, context):
+        if self.object_name in bpy.data.objects:
+            for m in bpy.data.objects[self.object_name].modifiers:
+                if m.type == "CLOTH":
+                    m.show_render = m.show_viewport = not m.show_render
+                    self.report({'INFO'}, "Hid cloth modifier on "+self.object_name)
+        else:
+            self.report({'ERROR'}, "Object "+self.object_name+" doesn't exist in the current scene.")
+        return {'FINISHED'}
 
 # ----------------
 #    Registration
@@ -587,7 +612,8 @@ classes = (
     UI_PT_InfoPanel,
     OPS_PT_Empty,
     UI_PT_BodyPhysicsPanel,
-    OPS_PT_BakePhysics
+    OPS_PT_BakePhysics,
+    OPS_PT_HideModifier
 )
 
 def register():
