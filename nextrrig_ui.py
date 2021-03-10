@@ -6,10 +6,10 @@ from bpy.props import EnumProperty, BoolProperty, StringProperty, IntProperty
 character_name = "Ellie"
 bl_info = {
     "name": "Nextr Rig UI",
-    "description": "Script for creating Nextr Rig UI",
+    "description": "Script which generates nice UI for your rigs",
     "author": "Nextr3D",
-    "version": (4, 0, 0),
-    "blender": (2, 91, 0)
+    "version": (4, 1, 0),
+    "blender": (2, 92, 0)
 }
 
 links = {
@@ -258,7 +258,7 @@ class Nextr_Rig(PropertyGroup):
         if data['update']:
             data['update'] = 0
             data["prev_nextrrig_properties"] = data["nextrrig_properties"]
-            
+
 class Nextr_Rig_Rig_Layers(PropertyGroup):
     rig_layers: [[{'key':0, 'name':'Face'}]]
 
@@ -278,6 +278,37 @@ class VIEW3D_PT_nextrRig(Panel):
         if context.object and context.object.name == character_name:
             return True
 
+def render_outfit_piece(o, element, props):
+    row = element.row(align=True)
+    name = o.name.replace(" ", "_")+"_outfit_toggle"
+    row.prop(props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and ("settings" in o.data or len(o.children))) else ("TRIA_RIGHT" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE" ))
+    row.prop(props, name+"_lock",icon="LOCKED" if props[name+"_lock"] else "UNLOCKED")
+
+    if (len(o.children) or "settings" in o.data) and props[name]:
+        settings_box = element.box()
+        s = o.data["settings"]
+        if "modifiers" in s:
+            settings_box.operator('nextr.empty', text="Modifiers",  emboss=False, depress=True, icon="MODIFIER")
+            for m_name in s['modifiers']:
+                if m_name in o.modifiers:
+                    modifier_row = settings_box.row(align=True)
+                    modifier_row.label(text=m_name, icon='MOD_'+o.modifiers[m_name].type)
+                    op = modifier_row.operator('nextr.hide_modifier', text='', icon='RESTRICT_VIEW_OFF' if o.modifiers[m_name].show_viewport else 'RESTRICT_VIEW_ON', depress=o.modifiers[m_name].show_viewport)
+                    op.object_name = o.name
+                    op.modifier_name = m_name
+                    op.hide_mode = "VIEWPORT"
+
+                    op_r = modifier_row.operator('nextr.hide_modifier', text='', icon='RESTRICT_RENDER_OFF' if o.modifiers[m_name].show_render else 'RESTRICT_RENDER_ON', depress=o.modifiers[m_name].show_render)
+                    op_r.object_name = o.name
+                    op_r.modifier_name = m_name
+                    op_r.hide_mode = "RENDER"
+        if len(o.children):
+            settings_box.operator('nextr.empty', text="Items",  emboss=False, depress=True, icon="MOD_CLOTH")
+            for child in o.children:
+                o_row = settings_box.row(align=True)
+                child_name = child.name.replace(" ", "_")+"_outfit_toggle"
+                if hasattr(props, child_name):
+                    o_row.prop(props, child_name, toggle=True)
 
 class VIEW3D_PT_outfits(VIEW3D_PT_nextrRig):
     bl_label = "Outfits"
@@ -297,43 +328,10 @@ class VIEW3D_PT_outfits(VIEW3D_PT_nextrRig):
         else:
             box.prop(props, "outfit_enum")
         
-        for o in bpy.data.collections[character_name+" Outfits"].children[props["outfit_enum"]].objects:
-            if (o.parent == None):
-                row = box.row(align=True)
-                name = o.name.replace(" ", "_")+"_outfit_toggle"
-                row.prop(props, name, toggle=True, icon="TRIA_DOWN" if ("settings" in o.data and props[name]) else ("TRIA_RIGHT" if "settings" in o.data else "NONE"))
-                row.prop(props, name+"_lock",icon="LOCKED" if props[name+"_lock"] else "UNLOCKED")
-                if "settings" in o.data and props[name]:
-                    settings_box = box.box()
-                    s = o.data["settings"]
-                    if "modifiers" in s:
-                        settings_box.operator('nextr.empty', text="Modifiers",  emboss=False, depress=True, icon="MODIFIER")
-                        for m_name in s['modifiers']:
-                            if m_name in o.modifiers:
-                                modifier_row = settings_box.row(align=True)
-                                modifier_row.label(text=m_name, icon='MOD_'+o.modifiers[m_name].type)
-                                op = modifier_row.operator('nextr.hide_modifier', text='', icon='RESTRICT_VIEW_OFF' if o.modifiers[m_name].show_viewport else 'RESTRICT_VIEW_ON', depress=o.modifiers[m_name].show_viewport)
-                                op.object_name = o.name
-                                op.modifier_name = m_name
-                                op.hide_mode = "VIEWPORT"
-
-                                op_r = modifier_row.operator('nextr.hide_modifier', text='', icon='RESTRICT_RENDER_OFF' if o.modifiers[m_name].show_render else 'RESTRICT_RENDER_ON', depress=o.modifiers[m_name].show_render)
-                                op_r.object_name = o.name
-                                op_r.modifier_name = m_name
-                                op_r.hide_mode = "RENDER"
-                    if 'children' in s:
-                        settings_box.operator('nextr.empty', text="Items",  emboss=False, depress=True, icon="MOD_CLOTH")
-                        for o_name in s['children']:
-                            o_row = settings_box.row(align=True)
-                            o_row.prop(props, o_name.replace(" ", "_")+"_outfit_toggle", toggle=True)
-                    if len(o.children):
-                        settings_box.operator('nextr.empty', text="Items",  emboss=False, depress=True, icon="MOD_CLOTH")
-                        for child in o.children:
-                            o_row = settings_box.row(align=True)
-                            child_name = child.name.replace(" ", "_")+"_outfit_toggle"
-                            if hasattr(props, child_name):
-                                o_row.prop(props, child_name, toggle=True)
-
+        for o in bpy.data.collections[character_name+" Outfits"].children[props['outfit_enum']].objects:
+            if o.parent == None:
+                render_outfit_piece(o,box, props)
+        
         locked_pieces = {}
         
         for i, c in enumerate(bpy.data.collections[character_name+" Outfits"].children):
@@ -342,15 +340,15 @@ class VIEW3D_PT_outfits(VIEW3D_PT_nextrRig):
                 if i != props["outfit_enum"]:
                     name = o.name.replace(" ", "_")+"_outfit_toggle"
                     if props[name+"_lock"]:
-                        pieces.append([name, o.name])
+                        pieces.append(o)
             if len(pieces):
                 locked_pieces[c.name] = pieces
+
         for n,pcs in locked_pieces.items():
             box.operator('nextr.empty', text=n,  emboss=False, depress=True)
             for p in  pcs:
-                row = box.row(align=True)
-                row.prop(props, p[0], toggle=True)
-                row.prop(props, p[0]+"_lock",icon="LOCKED" if props[p[0]+"_lock"] else "UNLOCKED")
+                
+                render_outfit_piece(p, box, props)
 
 class VIEW3D_PT_links(VIEW3D_PT_nextrRig):
     bl_label = "Links"
