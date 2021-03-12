@@ -31,10 +31,10 @@ def change_visibility(collection_name, object_name, props):
     "determines if the clothing piece should  have it's visibility changed"
     return collection_name == bpy.data.collections[character_name+" Outfits"].children[props['outfit_enum']].name or props[object_name+"_lock"]
 
-def render_props(props, name, element):
+def render_props(props, name, element, icon="NONE"):
     "renders a prop if it exists"
     if hasattr(props, name):
-        element.prop(props, name)
+        element.prop(props, name, icon=icon)
     
 
 class Nextr_Rig(PropertyGroup):
@@ -59,7 +59,9 @@ class Nextr_Rig(PropertyGroup):
     def ui_build(self):
         "executes all of the methods building the UI"
         self.ui_build_outfits()
+        self.ui_build_hair()
         self.ui_build_physics()
+        
 
     @classmethod
     def ui_build_outfits(self):
@@ -112,18 +114,18 @@ class Nextr_Rig(PropertyGroup):
     @classmethod
     def ui_build_hair(self):
         if character_name+" Hair" in bpy.data.collections:
-            rig = self.get_rig()
+            data = get_rig().data.nextrrig_properties
             default_value = 0
-            if 'hair_lock' in rig.data.nextrrig_properties:
-                default_value = rig.data.nextrrig_properties['hair_lock']
+            if 'hair_lock' in data:
+                default_value = data['hair_lock']
             self.ui_setup_toggle("hair_lock", None, "", "Locks hair so it's not changed by the outfit", default_value)
             hair_collection = bpy.data.collections[character_name+" Hair"]
             items = [*hair_collection.children, *hair_collection.objects]
             names = [o.name for o in items]
             default = 0
 
-            if hasattr(rig.data.nextrrig_properties, "hair_enum"):
-                default = rig.data.nextrrig_properties["hair_enum"]
+            if hasattr(data, "hair_enum"):
+                default = data["hair_enum"]
             self.ui_setup_enum('hair_enum', self.update_hair, "Hairdos", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
   
     @classmethod
@@ -236,20 +238,36 @@ class Nextr_Rig(PropertyGroup):
             for s in body.data.shape_keys.key_blocks:
                 if re.search(name+"\s?(s|S)hape", s.name):
                     s.value = show
+    @staticmethod
+    def update_hair_by_outfit(outfit_name):
+        nextr_props = get_rig().data.nextrrig_properties
+        hair_collection = [*bpy.data.collections[character_name+ " Hair"].children, *bpy.data.collections[character_name+ " Hair"].objects]
+        update_hair = False
+        for i in range(len(hair_collection)):
+            if outfit_name in hair_collection[i].name:
+                update_hair = True
+                nextr_props["hair_enum"] = i
+        
+        if update_hair:
+            for h in hair_collection:
+                if outfit_name in h.name:
+                    h.hide_render = h.hide_viewport = False
+                else:
+                    h.hide_render = h.hide_viewport = True
     def update_hair(self, context):
         "updates hairdos"
-        collections = bpy.data.collections
-        data = context.object.data
-        nextr_props = data.nextrrig_properties
-        for collection in collections:
-            if context.object.name_full in collection.objects:
-                hair_collection = [*collection.children[collection.name+" Hair"].children, *collection.children[collection.name+" Hair"].objects]
-                for c in hair_collection:
-                    c.hide_viewport = c.hide_render = True
-                index = nextr_props['hair_enum']
-                hair_collection[index].hide_viewport = hair_collection[index].hide_render = False
+        nextr_props = context.object.data.nextrrig_properties
+        hair_collection = [*bpy.data.collections[character_name+ " Hair"].children, *bpy.data.collections[character_name+ " Hair"].objects]
+        for c in hair_collection:
+            c.hide_viewport = c.hide_render = True
+        index = nextr_props['hair_enum']
+        hair_collection[index].hide_viewport = hair_collection[index].hide_render = False
     def update_outfits(self, context):
         Nextr_Rig.update_outfit_pieces_visibility()
+        nextr_props = context.object.data.nextrrig_properties
+        if "hair_lock" in nextr_props:
+            if not nextr_props["hair_lock"]:
+                Nextr_Rig.update_hair_by_outfit(bpy.data.collections[character_name+" Outfits"].children[nextr_props["outfit_enum"]].name)
         
     def update_outfit_pieces(self, context):
         Nextr_Rig.update_outfit_pieces_visibility()
@@ -401,7 +419,14 @@ class VIEW3D_PT_body(VIEW3D_PT_nextrRig):
     bl_idname = "VIEW3D_PT_body"+character_name
 
     def draw(self, context):
-        pass
+        layout = self.layout
+        nextr_props = context.object.data.nextrrig_properties
+        if hasattr(nextr_props, "hair_enum"):
+            box = layout.box()
+            box.label(text="Hair", icon="OUTLINER_OB_HAIR")
+            hair_row = box.row(align=True)
+            render_props(nextr_props, "hair_enum", hair_row)
+            hair_row.prop(nextr_props, "hair_lock", icon="LOCKED" if nextr_props["hair_lock"] else "UNLOCKED", toggle=True )
 class VIEW3D_PT_physics_panel(VIEW3D_PT_nextrRig):
     "Physics Sub-Panel"
     bl_label = "Physics (Experimental)"
