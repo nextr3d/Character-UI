@@ -122,9 +122,9 @@ class Nextr_Rig(PropertyGroup):
             hair_collection = bpy.data.collections[character_name+" Hair"]
             items = [*hair_collection.children, *hair_collection.objects]
             names = [o.name for o in items]
-            default = 0
 
-            if hasattr(data, "hair_enum"):
+            default = 0
+            if "hair_enum" in data:
                 default = data["hair_enum"]
             self.ui_setup_enum('hair_enum', self.update_hair, "Hairdos", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
   
