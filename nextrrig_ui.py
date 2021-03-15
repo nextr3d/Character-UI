@@ -35,10 +35,19 @@ def render_props(props, name, element, icon="NONE"):
     "renders a prop if it exists"
     if hasattr(props, name):
         element.prop(props, name, icon=icon)
-    
+
+def render_attributes(element, panel_name, attributes):
+    "renders attributes to the UI based on the panels name"
+    if panel_name in attributes:
+        box = element.box()
+        box.label(text='Attributes', icon='OPTIONS')
+        for p in attributes[panel_name]:
+            row = box.row(align=True)
+            path = p['path'][:p['path'].rindex('.')]
+            prop = p['path'][p['path'].rindex('.')+1:]
+            row.prop(eval(path), prop, text=p['name'])
 
 class Nextr_Rig(PropertyGroup):
-
     @classmethod
     def __init__(self):
         print("Rig initialization ", character_name)
@@ -52,6 +61,8 @@ class Nextr_Rig(PropertyGroup):
             data["prev_nextrrig_properties"] = {}
         if "update" not in data:
             data["update"] = 1
+        if "nextrrig_attributes" not in data:
+            data["nextrrig_attributes"] = {}
         self.ui_build()
         bpy.context.view_layer.objects.active = original_selected
 
@@ -110,6 +121,7 @@ class Nextr_Rig(PropertyGroup):
                 if o.name.replace(" ","_")+"_frame_end" in nextrrig_properties:
                     default_frame_end = nextrrig_properties[o.name.replace(" ","_")+"_frame_end"]
                 self.ui_setup_int(o.name.replace(" ","_")+"_frame_end", self.update_physics, "Frame End", "Sets the Ending Frame of the simulation for "+o.name, default_frame_end,0,1048574)
+
     @classmethod
     def ui_build_hair(self):
         if character_name+" Hair" in bpy.data.collections:
@@ -155,7 +167,6 @@ class Nextr_Rig(PropertyGroup):
                 update=update_function,
                 default='OP'+str(default)
             )
-
             setattr(self, property_name, prop)
 
     @classmethod
@@ -186,7 +197,8 @@ class Nextr_Rig(PropertyGroup):
                 max = max,
                 min = min
             )
-            setattr(self, property_name, prop) 
+            setattr(self, property_name, prop)
+
     @classmethod
     def ui_setup_vector(self, property_name,update_function,name = 'Name', description = 'Empty description', subtype = "NONE", size = 3,  precission = 4,default = (0.0,0.0,0.0), min = 0.0, max = 0.0):
         rig_data = get_rig().data
@@ -202,8 +214,6 @@ class Nextr_Rig(PropertyGroup):
                 default=default,
                 min = min,
                 max = max
-                # default = (1.0),
-
             )
             setattr(self, property_name, prop) 
 
@@ -211,8 +221,6 @@ class Nextr_Rig(PropertyGroup):
     def update_outfit_pieces_visibility():
         "updates visibility of an outfit object, updates masks and applies shapekeys"
         props = get_rig().data["nextrrig_properties"]
-        # prev_props = data["prev_nextrrig_properties"]
-        
         for c in bpy.data.collections[character_name+" Outfits"].children:
             for o in c.objects:
                 t_name = o.name.replace(" ","_")+"_outfit_toggle"
@@ -238,8 +246,6 @@ class Nextr_Rig(PropertyGroup):
                         child.hide_render = child.hide_viewport = True
                         Nextr_Rig.update_body_masks_by_object_name(child.name, False)
                         Nextr_Rig.update_body_shapekeys_by_object(child.name, False)
-
-        # data["prev_nextrrig_properties"] = data["nextrrig_properties"]
 
     @staticmethod
     def update_body_masks_by_object_name(name, show):
@@ -303,24 +309,17 @@ class Nextr_Rig(PropertyGroup):
                         m.point_cache.frame_start = nextr_props[o.name.replace(" ","_")+"_frame_start"]
                         m.point_cache.frame_end = nextr_props[o.name.replace(" ","_")+"_frame_end"]
     
-    # def pre_depsgraph_update(self, context):
-    #     start = time.time()
-    #     data = get_rig().data
-    #     update = False
-    #     for key in data["nextrrig_properties"]:
-    #         if (key not in data["prev_nextrrig_properties"] or key not in data["nextrrig_properties"]) or data["nextrrig_properties"][key] != data["prev_nextrrig_properties"][key]:
-    #             update = True
-    #             continue
-
-    #     if update:
-    #         data['update'] = 1
-        # print("update took: ", time.time() - start)
-
     def post_depsgraph_update(self, context):
-        data = get_rig().data
-        if data['update']:
-            data['update'] = 0
-            data["prev_nextrrig_properties"] = data["nextrrig_properties"]
+        rig = get_rig()
+        if bpy.context.view_layer.objects.active == rig: #run this check only if the active object is nextr rig, might not be good idea
+            data = rig.data
+            if data['nextrrig_attributes']:
+                for data_keys in enumerate(data['nextrrig_attributes']):
+                    panel = data['nextrrig_attributes'][data_keys[1]]
+                    for panel_keys in enumerate(panel):
+                        if 'synced' in panel[panel_keys[0]]:
+                            for attribute_keys in enumerate(panel[panel_keys[0]]['synced']):
+                                exec(attribute_keys[1]+'='+panel[panel_keys[0]]['path'])
 
 class Nextr_Rig_Rig_Layers(PropertyGroup):
     rig_layers: [[{'key':0, 'name':'Face'}]]
@@ -347,7 +346,6 @@ def render_outfit_piece(o, element, props, is_child = False):
     row.prop(props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and ("settings" in o.data or len(o.children))) else ("TRIA_RIGHT" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE" ))
     if not is_child:
         row.prop(props, name+"_lock",icon="LOCKED" if props[name+"_lock"] else "UNLOCKED")
-
     if (len(o.children) or "settings" in o.data) and props[name]:
         settings_box = element.box()
         if "settings" in o.data:
@@ -362,7 +360,6 @@ def render_outfit_piece(o, element, props, is_child = False):
                         op.object_name = o.name
                         op.modifier_name = m_name
                         op.hide_mode = "VIEWPORT"
-
                         op_r = modifier_row.operator('nextr.hide_modifier', text='', icon='RESTRICT_RENDER_OFF' if o.modifiers[m_name].show_render else 'RESTRICT_RENDER_ON', depress=o.modifiers[m_name].show_render)
                         op_r.object_name = o.name
                         op_r.modifier_name = m_name
@@ -412,6 +409,7 @@ class VIEW3D_PT_outfits(VIEW3D_PT_nextrRig):
             box.operator('nextr.empty', text=n,  emboss=False, depress=True)
             for p in  pcs:
                 render_outfit_piece(p, box, props)
+        render_attributes(layout, 'outfits', context.object.data.nextrrig_attributes)
 
 class VIEW3D_PT_links(VIEW3D_PT_nextrRig):
     bl_label = "Links"
@@ -445,6 +443,8 @@ class VIEW3D_PT_body(VIEW3D_PT_nextrRig):
             hair_row = box.row(align=True)
             render_props(nextr_props, "hair_enum", hair_row)
             hair_row.prop(nextr_props, "hair_lock", icon="LOCKED" if nextr_props["hair_lock"] else "UNLOCKED", toggle=True )
+        render_attributes(layout,'body', context.object.data.nextrrig_attributes)
+        
 class VIEW3D_PT_physics_panel(VIEW3D_PT_nextrRig):
     "Physics Sub-Panel"
     bl_label = "Physics (Experimental)"
@@ -499,7 +499,7 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_nextrRig):
             for i in range(31):
                 row = box.row(align=True)
                 row.operator('nextr.toggle_rig_layer', text=str(i+1)+' Layer', depress=layers[i]).rig_layer_index = i
-        
+        render_attributes(self.layout, 'rig', context.object.data.nextrrig_attributes)
 
 class OPS_OT_Empty(Operator):
     "for empty operator used only as text"
@@ -581,27 +581,21 @@ classes = (
     Nextr_Rig_Rig_Layers
 )
 
-
 def register():
     for c in classes:
         register_class(c)
-    bpy.types.Armature.nextrrig_properties = bpy.props.PointerProperty(
-        type=Nextr_Rig)
-    bpy.types.Armature.prev_nextrrig_properties = bpy.props.PointerProperty(
-        type=Nextr_Rig)
+    bpy.types.Armature.nextrrig_properties = bpy.props.PointerProperty(type=Nextr_Rig)
+    bpy.types.Armature.prev_nextrrig_properties = bpy.props.PointerProperty(type=Nextr_Rig)
     bpy.types.Mesh.settings = bpy.props.PointerProperty(type=Nextr_Rig_Object_Setting)
     bpy.types.Armature.rig_layers = bpy.props.PointerProperty(type=Nextr_Rig_Rig_Layers)
+    bpy.types.Armature.nextrrig_attributes = bpy.props.PointerProperty(type=Nextr_Rig_Object_Setting)
     Nextr_Rig.__init__()
-
+    bpy.app.handlers.depsgraph_update_post.append(Nextr_Rig.post_depsgraph_update)
 
 def unregister():
     for c in classes:
         unregister_class(c)
-
+    bpy.app.handlers.depsgraph_update_post.remove(Nextr_Rig.post_depsgraph_update)
 
 if __name__ == "__main__":
     register()
-
-
-# bpy.app.handlers.depsgraph_update_post.append(Nextr_Rig.post_depsgraph_update)
-# bpy.app.handlers.depsgraph_update_pre.append(Nextr_Rig.pre_depsgraph_update)
