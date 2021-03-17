@@ -20,7 +20,6 @@ links = {
     }
 }
 
-
 def get_rig():
     "returns an object with the character name"
     if character_name in bpy.data.objects:
@@ -53,17 +52,20 @@ class Nextr_Rig(PropertyGroup):
         print("Rig initialization ", character_name)
         original_selected = bpy.context.view_layer.objects.active
         rig = get_rig()
-        bpy.context.view_layer.objects.active = rig
-        data = rig.data
-        if "nextrrig_properties" not in data:
-            data["nextrrig_properties"] = {}
-        if "prev_nextrrig_properties" not in data:
-            data["prev_nextrrig_properties"] = {}
-        if "update" not in data:
-            data["update"] = 1
-        if "nextrrig_attributes" not in data:
-            data["nextrrig_attributes"] = {}
-        self.ui_build()
+        if rig:
+            bpy.context.view_layer.objects.active = rig
+            data = rig.data
+            if "nextrrig_properties" not in data:
+                data["nextrrig_properties"] = {}
+            if "prev_nextrrig_properties" not in data:
+                data["prev_nextrrig_properties"] = {}
+            if "update" not in data:
+                data["update"] = 1
+            if "nextrrig_attributes" not in data:
+                data["nextrrig_attributes"] = {}
+            self.ui_build()
+        else:
+            print("Rig with name ", character_name, " doesn't exist in the current scene!")
         bpy.context.view_layer.objects.active = original_selected
 
     @classmethod
@@ -224,8 +226,11 @@ class Nextr_Rig(PropertyGroup):
         for c in bpy.data.collections[character_name+" Outfits"].children:
             for o in c.objects:
                 t_name = o.name.replace(" ","_")+"_outfit_toggle"
+                is_top_child = True #True because if no parent than it's the top child
+                if not o.parent == None:
+                    is_top_child = not o.users_collection[0] == o.parent.users_collection[0] #parent is in different collection so it has to 
                 if change_visibility(c.name, t_name, props):
-                    if o.parent == None: #object is the first child of it's collection
+                    if is_top_child: #object is the first child of it's collection
                         o.hide_render = o.hide_viewport = not props[t_name]
                         Nextr_Rig.update_body_masks_by_object_name(o.name, props[t_name])
                         Nextr_Rig.update_body_shapekeys_by_object(o.name, props[t_name])
@@ -238,7 +243,7 @@ class Nextr_Rig(PropertyGroup):
                                 child.hide_render = child.hide_viewport = not show_mask_shapekey
                             Nextr_Rig.update_body_masks_by_object_name(child.name, show_mask_shapekey)
                             Nextr_Rig.update_body_shapekeys_by_object(child.name, show_mask_shapekey)
-                elif o.parent == None: #hide the object if it's parent
+                elif is_top_child: #hide the object if it's parent
                     o.hide_render = o.hide_viewport = True
                     Nextr_Rig.update_body_masks_by_object_name(o.name, False)
                     Nextr_Rig.update_body_shapekeys_by_object(o.name, False)
@@ -384,13 +389,14 @@ class VIEW3D_PT_outfits(VIEW3D_PT_nextrRig):
         box = layout.box()
         box.label(text="Outfit", icon="MATCLOTH")
         if len(bpy.data.collections[character_name+" Outfits"].children) == 1:
-            box.operator(
-                "nextr.empty", text=bpy.data.collections[character_name+" Outfits"].children[0].name, emboss=False, depress=True)
+            box.operator("nextr.empty", text=bpy.data.collections[character_name+" Outfits"].children[0].name, emboss=False, depress=True)
         else:
             box.prop(props, "outfit_enum")
-        
         for o in bpy.data.collections[character_name+" Outfits"].children[props['outfit_enum']].objects:
-            if o.parent == None:
+            is_top_child = True #True because if no parent than it's the top child
+            if not o.parent == None:
+                is_top_child = not o.users_collection[0] == o.parent.users_collection[0] #parent is in different collection so it has to 
+            if is_top_child:
                 render_outfit_piece(o,box, props)
         
         locked_pieces = {}
@@ -506,6 +512,9 @@ class OPS_OT_Empty(Operator):
     bl_idname = 'nextr.empty'
     bl_label = 'Text'
     bl_description = 'Header'
+
+    def execute(self, context):
+        pass
 
 class OPS_OT_ToggleRigLayer(Operator):
     bl_idname = 'nextr.toggle_rig_layer'
