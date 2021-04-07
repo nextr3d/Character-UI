@@ -38,14 +38,17 @@ def render_props(props, name, element, icon="NONE"):
 def render_attributes(element, panel_name, attributes):
     "renders attributes to the UI based on the panels name"
     if panel_name in attributes:
-        box = element.box()
-        box.label(text='Attributes', icon='OPTIONS')
-        for p in attributes[panel_name]:
-            row = box.row(align=True)
-            path = p['path'][:p['path'].rindex('.')]
-            prop = p['path'][p['path'].rindex('.')+1:]
-            row.prop(eval(path), prop, text=p['name'])
-
+        if len(attributes[panel_name]):
+            box = element.box()
+            box.label(text='Attributes', icon='OPTIONS')
+            for p in attributes[panel_name]:
+                row = box.row(align=True)
+                path = p['path'][:p['path'].rindex('.')]
+                prop = p['path'][p['path'].rindex('.')+1:]
+                if p['name']:
+                    row.prop(eval(path), prop, text=p['name'])
+                else:
+                    row.prop(eval(path), prop)
 class Nextr_Rig(PropertyGroup):
     @classmethod
     def __init__(self):
@@ -496,11 +499,12 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_nextrRig):
     def draw(self, context):
         box = self.layout.column().box()
         layers = context.object.data.layers
-        if 'rig_layers' in context.object.data and 'rig_layers' in context.object.data['rig_layers']:
-            for group in context.object.data['rig_layers']['rig_layers']:
-                row = box.row(align=True)
-                for toggle in group:
-                    row.operator('nextr.toggle_rig_layer', text=toggle['name'], depress=layers[toggle['index']]).rig_layer_index = toggle['index']
+        if 'nextrrig_rig_layers' in context.object.data and 'nextrrig_rig_layers' in context.object.data['nextrrig_rig_layers']:
+            for group in context.object.data['nextrrig_rig_layers']['nextrrig_rig_layers']:
+                if len(group):
+                    row = box.row(align=True)
+                    for toggle in group:
+                        row.operator('nextr.toggle_rig_layer', text=toggle['name'], depress=layers[toggle['index']]).rig_layer_index = toggle['index']
         else:
             for i in range(31):
                 row = box.row(align=True)
@@ -596,7 +600,7 @@ def register():
     bpy.types.Armature.nextrrig_properties = bpy.props.PointerProperty(type=Nextr_Rig)
     bpy.types.Armature.prev_nextrrig_properties = bpy.props.PointerProperty(type=Nextr_Rig)
     bpy.types.Mesh.settings = bpy.props.PointerProperty(type=Nextr_Rig_Object_Setting)
-    bpy.types.Armature.rig_layers = bpy.props.PointerProperty(type=Nextr_Rig_Rig_Layers)
+    bpy.types.Armature.nextrrig_rig_layers = bpy.props.PointerProperty(type=Nextr_Rig_Rig_Layers)
     bpy.types.Armature.nextrrig_attributes = bpy.props.PointerProperty(type=Nextr_Rig_Object_Setting)
     Nextr_Rig.__init__()
     bpy.app.handlers.depsgraph_update_post.append(Nextr_Rig.post_depsgraph_update)
