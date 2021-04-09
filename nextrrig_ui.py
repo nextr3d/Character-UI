@@ -8,7 +8,7 @@ bl_info = {
     "name": "Nextr Rig UI",
     "description": "Script which generates nice UI for your rigs",
     "author": "Nextr3D",
-    "version": (4, 1, 0),
+    "version": (4, 2, 0),
     "blender": (2, 92, 0)
 }
 
@@ -357,9 +357,25 @@ class VIEW3D_PT_nextrRig(Panel):
 def render_outfit_piece(o, element, props, is_child = False):
     row = element.row(align=True)
     name = o.name.replace(" ", "_")+"_outfit_toggle"
-    row.prop(props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and ("settings" in o.data or len(o.children))) else ("TRIA_RIGHT" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE" ))
+    if o.data:
+        row.prop(props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and ("settings" in o.data or len(o.children))) else ("TRIA_RIGHT" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE" ))
+    else:
+        row.prop(props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and (len(o.children))) else ("TRIA_RIGHT" if not props[name] and (len(o.children)) else "NONE" ))
+
     if not is_child:
         row.prop(props, name+"_lock",icon="LOCKED" if props[name+"_lock"] else "UNLOCKED")
+
+    if not o.data:
+        if len(o.children) and props[name]:
+            settings_box = element.box()
+            settings_box.operator('nextr.empty', text="Items",  emboss=False, depress=True, icon="MOD_CLOTH")
+            for child in o.children:
+                child_name = child.name.replace(" ", "_")+"_outfit_toggle"
+                if hasattr(props, child_name):
+                    render_outfit_piece(child, settings_box, props, True)
+
+        return
+
     if (len(o.children) or "settings" in o.data) and props[name]:
         settings_box = element.box()
         if "settings" in o.data:
