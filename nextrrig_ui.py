@@ -326,8 +326,9 @@ class Nextr_Rig(PropertyGroup):
                 panel = data['nextrrig_attributes'][data_keys[1]]
                 for panel_keys in enumerate(panel):
                     if 'synced' in panel[panel_keys[0]]:
-                        for attribute_keys in enumerate(panel[panel_keys[0]]['synced']):
-                            exec(attribute_keys[1]+'='+panel[panel_keys[0]]['path'])
+                        if panel[panel_keys[0]]['synced']:
+                            for attribute_keys in enumerate(panel[panel_keys[0]]['synced']):
+                                exec(attribute_keys[1]+'='+panel[panel_keys[0]]['path'])
 
 class Nextr_Rig_Rig_Layers(PropertyGroup):
     rig_layers: [[{'key':0, 'name':'Face'}]]
