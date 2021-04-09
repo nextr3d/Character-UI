@@ -42,15 +42,20 @@ def render_attributes(element, panel_name, attributes):
             box = element.box()
             box.label(text='Attributes', icon='OPTIONS')
             for p in attributes[panel_name]:
-                row = box.row(align=True)
-                delimiter = '][' if '][' in p['path'] else '.'
-                offset = 1 if '][' in p['path'] else 0
-                prop = p['path'][p['path'].rindex(delimiter)+1:]
-                path = p['path'][:p['path'].rindex(delimiter)+offset]
-                if p['name']:
-                    row.prop(eval(path), prop, text=p['name'])
-                else:
-                    row.prop(eval(path), prop)
+                render = True
+                if 'visibility' in p:
+                    if get_rig().data['nextrrig_properties'][p['visibility']['variable']] != p['visibility']['value']:
+                        render = False
+                if render:
+                    row = box.row(align=True)
+                    delimiter = '][' if '][' in p['path'] else '.'
+                    offset = 1 if '][' in p['path'] else 0
+                    prop = p['path'][p['path'].rindex(delimiter)+1:]
+                    path = p['path'][:p['path'].rindex(delimiter)+offset]
+                    if p['name']:
+                        row.prop(eval(path), prop, text=p['name'])
+                    else:
+                        row.prop(eval(path), prop)
 class Nextr_Rig(PropertyGroup):
     @classmethod
     def __init__(self):
