@@ -200,7 +200,6 @@ class OPS_OT_AddAttribute(Operator):
     bl_idname = 'nextr_debug.add_attribute'
     bl_label = 'Text'
     bl_description = 'Adds the attribute to the UI or synces it to another attribute'
-
     
     panel_name : StringProperty()
     parent_path :  StringProperty()
@@ -212,37 +211,38 @@ class OPS_OT_AddAttribute(Operator):
             self.report({'WARNING'}, "Couldn't get path, invalid selection!")
             return {'FINISHED'}
         path = context.window_manager.clipboard
-
         name=path[:path.rindex('.')]+".name"
         try:
             name=eval(name)
         except:
             name = False
-
         if context.active_object:
             o = get_edited_object(context)
             if 'nextrrig_attributes' in o.data:
                 arr = []
                 if self.panel_name in o.data['nextrrig_attributes']:
                     arr = o.data['nextrrig_attributes'][self.panel_name]
-                    try:
-                        arr.append({'path': path, 'name':name})
-                    except:
-                        arr = []
-                        arr.append({'path': path, 'name':name})
+                    if self.parent_path:
+                        arr = sync_attribute_to_parent(arr, self.parent_path, path)
+                    else:
+                        try:
+                            arr.append({'path': path, 'name':name})
+                        except:
+                            arr = []
+                            arr.append({'path': path, 'name':name})
                     o.data['nextrrig_attributes'][self.panel_name] = arr
                 else:
-                    arr = []
                     arr.append({'path': path, 'name':name})
                     o.data['nextrrig_attributes'][self.panel_name] = arr
-                print(arr)
+                
                 if name:
                     self.report({'INFO'}, 'Added attribute '+ name +' to '+o.name)
                 else:
                     self.report({'INFO'}, 'Added attribute to '+o.name)
             else:
                 self.report({'WARNING'}, o.name + ' is not Nextr Rig enabled! You must enable it first.')
-
+        self.panel_name = ""
+        self.parent_path = ""
         return {'FINISHED'}
 
 class OPS_OT_PinActiveObject(Operator):
@@ -315,7 +315,6 @@ class OPS_OT_RemoveAttribute(Operator):
                     att = o.data['nextrrig_attributes'][self.panel_name]
                     new_att = []
                     for a in att:
-                        print(a['path']," : " ,self.path)
                         if a['path'] != self.path:
                             new_att.append(a)
                     o.data['nextrrig_attributes'][self.panel_name] = new_att
@@ -350,26 +349,26 @@ class WM_MT_sync_attribute_panel(Menu):
 
 class WM_MT_sync_attribute_outfits_menu(Menu):
     bl_label = "no attribute name entered!"
-    bl_idname = 'WM_MT_sync_attribute'
+    bl_idname = 'WM_MT_sync_attribute_outfits_menu'
     
     def draw(self, context):
-        self.layout.label(text='Attributes')
+        self.layout.label(text='Attributes for Outfits Panel')
         render_attributes_in_menu(self.layout, context, 'outfits')
 
 class WM_MT_sync_attribute_body_menu(Menu):
     bl_label = "no attribute name entered!"
-    bl_idname = 'WM_MT_sync_attribute'
+    bl_idname = 'WM_MT_sync_attribute_body_menu'
     
     def draw(self, context):
-        self.layout.label(text='Attributes')
+        self.layout.label(text='Attributes for Body Panel')
         render_attributes_in_menu(self.layout, context, 'body')
 
 class WM_MT_sync_attribute_rig_menu(Menu):
     bl_label = "no attribute name entered!"
-    bl_idname = 'WM_MT_sync_attribute'
+    bl_idname = 'WM_MT_sync_attribute_rig_menu'
     
     def draw(self, context):
-        self.layout.label(text='Attributes')
+        self.layout.label(text='Attributes for Rig Layers Panel')
         render_attributes_in_menu(self.layout, context, 'rig')
 
 def render_attributes(element, panel_name, attributes):
@@ -377,12 +376,20 @@ def render_attributes(element, panel_name, attributes):
     if panel_name in attributes:
         for p in attributes[panel_name]:
             row = element.row(align=True)
-            path = p['path'][:p['path'].rindex('.')]
-            prop = p['path'][p['path'].rindex('.')+1:]
+            delimiter = '][' if '][' in p['path'] else '.'
+            offset = 1 if '][' in p['path'] else 0
+            prop = p['path'][p['path'].rindex(delimiter)+1:]
+            path = p['path'][:p['path'].rindex(delimiter)+offset]
             if p['name']:
-                row.prop(eval(path), prop, text=p['name'])
+                try:
+                    row.prop(eval(path), prop, text=p['name'])
+                except:
+                    continue
             else:
-                row.prop(eval(path), prop)
+                try:
+                    row.prop(eval(path), prop)
+                except:
+                    continue
             op = row.operator(OPS_OT_RemoveAttribute.bl_idname, icon="TRASH", text="")
             op.path = p['path']
             op.panel_name = panel_name
@@ -392,7 +399,11 @@ def render_attributes_in_menu(layout, context, panel):
         o = get_edited_object(context)
         if panel in o.data['nextrrig_attributes']:
             for p in o.data['nextrrig_attributes'][panel]:
-                op = layout.operator(OPS_OT_AddAttribute.bl_idname, text=p['name'])
+                name = "Default Value"
+                
+                if p['name']:
+                    name= p['name']
+                op = layout.operator(OPS_OT_AddAttribute.bl_idname, text=name)
                 op.parent_path = p['path']
                 op.panel_name = panel
     return layout
@@ -405,7 +416,19 @@ def render_copy_data_path(self, context):
         layout.menu(WM_MT_add_new_attribute.bl_idname)
         layout.menu(WM_MT_sync_attribute_panel.bl_idname)
 
-
+def sync_attribute_to_parent(attributes, parent_path, path):
+   
+    for i in range(len(attributes)):
+        if attributes[i]['path'] == parent_path:
+            if 'synced' in attributes[i]:
+                syn = attributes[i]['synced'] #this thing is so unnecessary but I couldn't find a better solution, no matter what I did I couldn't add new attributes
+                syn.append(path)
+                attributes[i]['synced'] = syn
+            else:
+                syn = [] #here is it the same as few lines up
+                syn.append(path)
+                attributes[i]['synced'] = syn
+    return attributes
 
 classes = (VIEW3D_PT_nextr_rig_debug,
 OPS_OT_PinActiveObject,
