@@ -28,7 +28,7 @@ def get_rig():
 
 def change_visibility(collection_name, object_name, props):
     "determines if the clothing piece should  have it's visibility changed"
-    return collection_name == bpy.data.collections[character_name+" Outfits"].children[props['outfit_enum']].name or props[object_name+"_lock"]
+    return collection_name == bpy.data.collections[character_name+" Outfits"].children[props['outfits_enum']].name or props[object_name+"_lock"]
 
 def render_props(props, name, element, icon="NONE"):
     "renders a prop if it exists"
@@ -43,8 +43,10 @@ def render_attributes(element, panel_name, attributes):
             box.label(text='Attributes', icon='OPTIONS')
             for p in attributes[panel_name]:
                 row = box.row(align=True)
-                path = p['path'][:p['path'].rindex('.')]
-                prop = p['path'][p['path'].rindex('.')+1:]
+                delimiter = '][' if '][' in p['path'] else '.'
+                offset = 1 if '][' in p['path'] else 0
+                prop = p['path'][p['path'].rindex(delimiter)+1:]
+                path = p['path'][:p['path'].rindex(delimiter)+offset]
                 if p['name']:
                     row.prop(eval(path), prop, text=p['name'])
                 else:
@@ -84,10 +86,10 @@ class Nextr_Rig(PropertyGroup):
         if outfits_collection_name in bpy.data.collections:
             outfits = bpy.data.collections[outfits_collection_name].children.keys()
             options = self.create_enum_options(outfits, "Show outfit: ")
-            default = self.get_property("outfit_enum")
+            default = self.get_property("outfits_enum")
             if default == None:
                 default = len(options) - 1
-            self.ui_setup_enum("outfit_enum", self.update_outfits,"Outfits", "Changes outfits", options, default)
+            self.ui_setup_enum("outfits_enum", self.update_outfits,"Outfits", "Changes outfits", options, default)
             self.ui_build_outfit_buttons(outfits)
 
     @classmethod
@@ -301,7 +303,7 @@ class Nextr_Rig(PropertyGroup):
         nextr_props = context.object.data.nextrrig_properties
         if "hair_lock" in nextr_props:
             if not nextr_props["hair_lock"]:
-                Nextr_Rig.update_hair_by_outfit(bpy.data.collections[character_name+" Outfits"].children[nextr_props["outfit_enum"]].name)
+                Nextr_Rig.update_hair_by_outfit(bpy.data.collections[character_name+" Outfits"].children[nextr_props["outfits_enum"]].name)
         
     def update_outfit_pieces(self, context):
         Nextr_Rig.update_outfit_pieces_visibility()
@@ -318,16 +320,14 @@ class Nextr_Rig(PropertyGroup):
                         m.point_cache.frame_end = nextr_props[o.name.replace(" ","_")+"_frame_end"]
     
     def post_depsgraph_update(self, context):
-        rig = get_rig()
-        if bpy.context.view_layer.objects.active == rig: #run this check only if the active object is nextr rig, might not be good idea
-            data = rig.data
-            if data['nextrrig_attributes']:
-                for data_keys in enumerate(data['nextrrig_attributes']):
-                    panel = data['nextrrig_attributes'][data_keys[1]]
-                    for panel_keys in enumerate(panel):
-                        if 'synced' in panel[panel_keys[0]]:
-                            for attribute_keys in enumerate(panel[panel_keys[0]]['synced']):
-                                exec(attribute_keys[1]+'='+panel[panel_keys[0]]['path'])
+        data = get_rig().data
+        if data['nextrrig_attributes']:
+            for data_keys in enumerate(data['nextrrig_attributes']):
+                panel = data['nextrrig_attributes'][data_keys[1]]
+                for panel_keys in enumerate(panel):
+                    if 'synced' in panel[panel_keys[0]]:
+                        for attribute_keys in enumerate(panel[panel_keys[0]]['synced']):
+                            exec(attribute_keys[1]+'='+panel[panel_keys[0]]['path'])
 
 class Nextr_Rig_Rig_Layers(PropertyGroup):
     rig_layers: [[{'key':0, 'name':'Face'}]]
@@ -394,8 +394,8 @@ class VIEW3D_PT_outfits(VIEW3D_PT_nextrRig):
         if len(bpy.data.collections[character_name+" Outfits"].children) == 1:
             box.operator("nextr.empty", text=bpy.data.collections[character_name+" Outfits"].children[0].name, emboss=False, depress=True)
         else:
-            box.prop(props, "outfit_enum")
-        for o in bpy.data.collections[character_name+" Outfits"].children[props['outfit_enum']].objects:
+            box.prop(props, "outfits_enum")
+        for o in bpy.data.collections[character_name+" Outfits"].children[props['outfits_enum']].objects:
             is_top_child = True #True because if no parent than it's the top child
             if not o.parent == None:
                 is_top_child = not o.users_collection[0] == o.parent.users_collection[0] #parent is in different collection so it has to 
@@ -407,7 +407,7 @@ class VIEW3D_PT_outfits(VIEW3D_PT_nextrRig):
         for i, c in enumerate(bpy.data.collections[character_name+" Outfits"].children):
             pieces = []
             for o in c.objects:
-                if i != props["outfit_enum"]:
+                if i != props["outfits_enum"]:
                     name = o.name.replace(" ", "_")+"_outfit_toggle"
                     if props[name+"_lock"]:
                         pieces.append(o)
