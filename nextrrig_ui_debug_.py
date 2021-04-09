@@ -308,9 +308,25 @@ class OPS_OT_EditAttribute(Operator):
     panels : EnumProperty(name="Panel", items=[('outfits','Outfits','Outfits panel',0),('body','Body','Body Panel',1),('rig','Rig Layers','Rig Layers Panel',2)])
     name : StringProperty(default='Default Value', name="Attribute's Name")
     attribute : {}
+    visibility_value: IntProperty(name="Visibility Value", description="On which value of the variable show the attribute in the UI")
+    visibility_variable : StringProperty(name='Varibale Name')
 
     def execute(self, context):
-        print("oi")
+        o = get_edited_object(context)
+        a = get_attribute_by_path(context,self.panel_name, self.path)
+        if a:
+            if 'visibility' in a:
+                a['visibility']['variable'] = self.visibility_variable
+                a['visibility']['value'] = self.visibility_value
+            else:
+                a['visibility'] = {'variable': self.visibility_variable, 'value': self.visibility_value}
+            new_attributes = []
+            for attribute in o.data['nextrrig_attributes'][self.panel_name]:
+                if attribute['path'] == self.path:
+                    new_attributes.append(a)
+                else:
+                    new_attributes.append(attribute)
+            o.data['nextrrig_attributes'][self.panel_name] = new_attributes
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -318,6 +334,19 @@ class OPS_OT_EditAttribute(Operator):
         if not self.attribute:
             return {"CANCELED"}
 
+        # might work on this some day, now you need to the name manually
+        # items = [('none', 'Always Visible', 'Attribute is going to be always visible',0)]
+        # # self.variables_enum : EnumProperty(name="Variables", items=items)
+        # o = get_edited_object(context)
+        # for key,prop in enumerate(o.data['nextrrig_properties']):
+        #     name = prop
+        #     try:
+        #         name = getattr(bpy.types.Armature.nextrrig_properties[1]['type'],prop)[1]['name']
+        #     except:
+        #         continue
+        #     items.append((prop, name, 'Variable used for visibility', key+1))
+        if 'visibility' in self.attribute:
+            self.visibility_variable = self.attribute['visibility']['variable']
         self.panels = self.panel_name
         self.name = self.attribute['name'] if self.attribute['name'] else "Default Value" 
 
@@ -330,6 +359,10 @@ class OPS_OT_EditAttribute(Operator):
         box.prop(self, "name")
         box.prop(self, "path", text="Path", icon="RNA")
         box.prop(self, 'panels')
+        box_visibility = box.box()
+        box_visibility.label(text="Visibility")
+        box_visibility.prop(self, "visibility_variable")
+        box_visibility.prop(self, 'visibility_value')
         if 'synced' in self.attribute:
             if self.attribute['synced']:
                 box_synced = box.box()
