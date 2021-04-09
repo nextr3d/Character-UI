@@ -1,6 +1,6 @@
 from bpy.utils import (register_class, unregister_class)
 from bpy.types import (Panel, Operator, PropertyGroup, Menu)
-from bpy.props import EnumProperty, BoolProperty, StringProperty, IntProperty, FloatVectorProperty
+from bpy.props import EnumProperty, BoolProperty, StringProperty, IntProperty, FloatVectorProperty, CollectionProperty
 import bpy
 
 def get_rig(name):
@@ -298,7 +298,79 @@ class OPS_OT_GenerateRigLayers(Operator):
         else:
             self.report({'ERROR'}, "No active object!")
         return {'FINISHED'}
+class OPS_OT_EditAttribute(Operator):
+    bl_idname = 'nextr_debug.edit_attribute'
+    bl_label = 'Edit attribute'
+    bl_description = 'Edit attribute' 
 
+    path : StringProperty(name="Path", description="RNA path of the attribute")
+    panel_name : StringProperty()
+    panels : EnumProperty(name="Panel", items=[('outfits','Outfits','Outfits panel',0),('body','Body','Body Panel',1),('rig','Rig Layers','Rig Layers Panel',2)])
+    name : StringProperty(default='Default Value', name="Attribute's Name")
+    attribute : {}
+
+    def execute(self, context):
+        print("oi")
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        self.attribute = get_attribute_by_path(context, self.panel_name, self.path)        
+        if not self.attribute:
+            return {"CANCELED"}
+
+        self.panels = self.panel_name
+        self.name = self.attribute['name'] if self.attribute['name'] else "Default Value" 
+
+        return context.window_manager.invoke_props_dialog(self, width=750)
+
+    def draw(self, context):
+        box = self.layout.box()
+         
+        box.label(text=self.name, icon="PREFERENCES")
+        box.prop(self, "name")
+        box.prop(self, "path", text="Path", icon="RNA")
+        box.prop(self, 'panels')
+        if 'synced' in self.attribute:
+            if self.attribute['synced']:
+                box_synced = box.box()
+                box_synced.label(text="Synced attributes")
+                for synced in self.attribute['synced']:
+                    row = box_synced.row(align=True)
+                    row.label(text=synced)
+                    op = row.operator(OPS_OT_RemoveSyncedAttribute.bl_idname, text="", icon="TRASH")
+                    op.path = self.path
+                    op.panel_name = self.panel_name
+                    op.attribute_path = synced
+
+class OPS_OT_RemoveSyncedAttribute(Operator):
+    bl_idname = 'nextr_debug.remove_synced_attribute'
+    bl_label = 'Remove synced attribute from the UI'
+    bl_description = "Removes synced attribute from the UI and other synced attributes too"
+
+    path : StringProperty()
+    panel_name : StringProperty()
+    attribute_path : StringProperty()
+
+    def execute(self, context):
+        a = get_attribute_by_path(context, self.panel_name, self.path)
+        
+        if a:
+            synced = []
+            synced = a['synced']
+            a['synced'] = synced.remove(self.attribute_path)
+            o = get_edited_object(context)
+            new_attributes = []
+            for attribute in o['nextrrig_attributes'][self.panel_name]:
+                if attribute['path'] == self.attribute_path:
+                    new_attributes.append(a)
+                else:
+                    new_attributes.append(attribute)
+            o['nextrrig_attributes'][self.panel_name] = new_attributes
+            self.report({'INFO'}, 'Removed synced attribute')
+            return {'FINISHED'}
+            
+        self.report({'INFO'}, "Couldn't find attribute with the path"+self.path)
+        return {'CANCELED'}
 class OPS_OT_RemoveAttribute(Operator):
     bl_idname = 'nextr_debug.remove_attribute'
     bl_label = 'Remove attribute from the UI'
@@ -393,6 +465,9 @@ def render_attributes(element, panel_name, attributes):
             op = row.operator(OPS_OT_RemoveAttribute.bl_idname, icon="TRASH", text="")
             op.path = p['path']
             op.panel_name = panel_name
+            op_edit = row.operator(OPS_OT_EditAttribute.bl_idname, icon="PREFERENCES", text="")
+            op_edit.path = p['path']
+            op_edit.panel_name = panel_name
 
 def render_attributes_in_menu(layout, context, panel):
     if context.active_object:
@@ -422,6 +497,8 @@ def sync_attribute_to_parent(attributes, parent_path, path):
         if attributes[i]['path'] == parent_path:
             if 'synced' in attributes[i]:
                 syn = attributes[i]['synced'] #this thing is so unnecessary but I couldn't find a better solution, no matter what I did I couldn't add new attributes
+                if not syn:
+                    syn = []
                 syn.append(path)
                 attributes[i]['synced'] = syn
             else:
@@ -429,6 +506,16 @@ def sync_attribute_to_parent(attributes, parent_path, path):
                 syn.append(path)
                 attributes[i]['synced'] = syn
     return attributes
+
+def get_attribute_by_path(context, panel_name, path):
+    if context.active_object:
+        o = get_edited_object(context)
+        if 'nextrrig_attributes' in o.data:
+            if panel_name in o.data['nextrrig_attributes']:
+                for a in o.data['nextrrig_attributes'][panel_name]:
+                    if path == a['path']:
+                        return a
+    return False
 
 classes = (VIEW3D_PT_nextr_rig_debug,
 OPS_OT_PinActiveObject,
@@ -445,7 +532,9 @@ WM_MT_sync_attribute_panel,
 WM_MT_sync_attribute_outfits_menu,
 WM_MT_sync_attribute_body_menu,
 WM_MT_sync_attribute_rig_menu,
-OPS_OT_RemoveAttribute)
+OPS_OT_RemoveAttribute,
+OPS_OT_EditAttribute,
+OPS_OT_RemoveSyncedAttribute)
 
 def setup_rig_layers():
     for i in range(31):
