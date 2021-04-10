@@ -44,8 +44,9 @@ def render_attributes(element, panel_name, attributes):
             for p in attributes[panel_name]:
                 render = True
                 if 'visibility' in p:
-                    if get_rig().data['nextrrig_properties'][p['visibility']['variable']] != p['visibility']['value']:
-                        render = False
+                    if p['visibility']['variable']:
+                        if get_rig().data['nextrrig_properties'][p['visibility']['variable']] != p['visibility']['value']:
+                            render = False
                 if render:
                     row = box.row(align=True)
                     delimiter = '][' if '][' in p['path'] else '.'
