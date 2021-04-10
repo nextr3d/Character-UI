@@ -320,6 +320,9 @@ class OPS_OT_EditAttribute(Operator):
                 a['visibility']['value'] = self.visibility_value
             else:
                 a['visibility'] = {'variable': self.visibility_variable, 'value': self.visibility_value}
+            a['name'] = self.name
+            a['path'] = self.path
+            
             new_attributes = []
             for attribute in o.data['nextrrig_attributes'][self.panel_name]:
                 if attribute['path'] == self.path:
@@ -347,6 +350,10 @@ class OPS_OT_EditAttribute(Operator):
         #     items.append((prop, name, 'Variable used for visibility', key+1))
         if 'visibility' in self.attribute:
             self.visibility_variable = self.attribute['visibility']['variable']
+            self.visibility_value = self.attribute['visibility']['value']
+        else:
+            self.visibility_value = 0
+            self.visibility_variable = ""
         self.panels = self.panel_name
         self.name = self.attribute['name'] if self.attribute['name'] else "Default Value" 
 
@@ -356,7 +363,7 @@ class OPS_OT_EditAttribute(Operator):
         box = self.layout.box()
          
         box.label(text=self.name, icon="PREFERENCES")
-        box.prop(self, "name")
+        box.prop(self, "name", emboss=True)
         box.prop(self, "path", text="Path", icon="RNA")
         box.prop(self, 'panels')
         box_visibility = box.box()
