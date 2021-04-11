@@ -521,6 +521,7 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_nextrRig):
 
     def draw(self, context):
         box = self.layout.column().box()
+        box.label(text="Rig Layers")
         layers = context.object.data.layers
         if 'nextrrig_rig_layers' in context.object.data and 'nextrrig_rig_layers' in context.object.data['nextrrig_rig_layers']:
             for group in context.object.data['nextrrig_rig_layers']['nextrrig_rig_layers']:
