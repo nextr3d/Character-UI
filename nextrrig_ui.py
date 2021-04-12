@@ -54,9 +54,15 @@ def render_attributes(element, panel_name, attributes):
                     prop = p['path'][p['path'].rindex(delimiter)+1:]
                     path = p['path'][:p['path'].rindex(delimiter)+offset]
                     if p['name']:
-                        row.prop(eval(path), prop, text=p['name'])
+                        try:
+                            row.prop(eval(path), prop, text=p['name'])
+                        except:
+                            print("couldn't render ", path, " prop")
                     else:
-                        row.prop(eval(path), prop)
+                        try:
+                            row.prop(eval(path), prop)
+                        except:
+                            print("couldn't render ", path, " prop")
 class Nextr_Rig(PropertyGroup):
     @classmethod
     def __init__(self):
@@ -521,7 +527,7 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_nextrRig):
 
     def draw(self, context):
         box = self.layout.column().box()
-        box.label(text="Rig Layers")
+        box.label(text="Rig Layers", icon="ARMATURE_DATA")
         layers = context.object.data.layers
         if 'nextrrig_rig_layers' in context.object.data and 'nextrrig_rig_layers' in context.object.data['nextrrig_rig_layers']:
             for group in context.object.data['nextrrig_rig_layers']['nextrrig_rig_layers']:
