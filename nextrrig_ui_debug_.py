@@ -106,6 +106,7 @@ class VIEW3D_PT_nextr_rig_debug_rig_layers(Panel):
         layout = self.layout
         box = layout.box()
         box.label(text="Rig Layers")
+        box.operator('nextr_debug.generate_rig_layers')
         for i in range(31):
             icon = "HIDE_OFF"
             if 'nextr_rig_layers_visibility_'+str(i) in context.scene:
@@ -502,12 +503,13 @@ def render_attributes(element, panel_name, attributes):
                     row.prop(eval(path), prop)
                 except:
                     continue
-            op = row.operator(OPS_OT_RemoveAttribute.bl_idname, icon="TRASH", text="")
-            op.path = p['path']
-            op.panel_name = panel_name
             op_edit = row.operator(OPS_OT_EditAttribute.bl_idname, icon="PREFERENCES", text="")
             op_edit.path = p['path']
             op_edit.panel_name = panel_name
+            op = row.operator(OPS_OT_RemoveAttribute.bl_idname, icon="TRASH", text="")
+            op.path = p['path']
+            op.panel_name = panel_name
+           
 
 def render_attributes_in_menu(layout, context, panel):
     if context.active_object:
