@@ -45,8 +45,20 @@ def render_attributes(element, panel_name, attributes):
                 render = True
                 if 'visibility' in p:
                     if p['visibility']['variable']:
-                        if get_rig().data['nextrrig_properties'][p['visibility']['variable']] != p['visibility']['value']:
-                            render = False
+                        if p['visibility']['variable'] == 'active_bone':
+                            if p['visibility']['object'] and p['visibility']['object'] in bpy.data.objects:
+                                if bpy.data.objects[p['visibility']['object']].type == "ARMATURE":
+                                    if p['visibility']['bone'] and p['visibility']['bone'] in bpy.data.objects[p['visibility']['object']].data.bones:
+                                        render = True if bpy.data.objects[p['visibility']['object']].data.bones.active.name == p['visibility']['bone'] else False
+                                        if render:
+                                            render = bpy.data.objects[p['visibility']['object']].data.bones.active.select
+                                        if not p['visibility']['value']:
+                                            render = not render
+                        else:
+                            try:
+                                render = eval(p['visibility']['data_path']) == p['visibility']['value']
+                            except:
+                                continue
                 if render:
                     row = box.row(align=True)
                     delimiter = '][' if '][' in p['path'] else '.'
