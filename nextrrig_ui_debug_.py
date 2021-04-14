@@ -1,6 +1,6 @@
 from bpy.utils import (register_class, unregister_class)
 from bpy.types import (Panel, Operator, PropertyGroup, Menu)
-from bpy.props import EnumProperty, BoolProperty, StringProperty, IntProperty, FloatVectorProperty, CollectionProperty
+from bpy.props import EnumProperty, BoolProperty, StringProperty, IntProperty, FloatVectorProperty, CollectionProperty, PointerProperty
 import bpy
 
 def get_rig(name):
@@ -303,24 +303,39 @@ class OPS_OT_EditAttribute(Operator):
     bl_idname = 'nextr_debug.edit_attribute'
     bl_label = 'Edit attribute'
     bl_description = 'Edit attribute' 
-
+    
     path : StringProperty(name="Path", description="RNA path of the attribute")
     panel_name : StringProperty()
     panels : EnumProperty(name="Panel", items=[('outfits','Outfits','Outfits panel',0),('body','Body','Body Panel',1),('rig','Rig Layers','Rig Layers Panel',2)])
     name : StringProperty(default='Default Value', name="Attribute's Name")
     attribute : {}
     visibility_value: IntProperty(name="Visibility Value", description="On which value of the variable show the attribute in the UI")
-    visibility_variable : StringProperty(name='Varibale Name')
+    visibility_data_path : StringProperty(name='Data Path')
+    variable_type : EnumProperty(name="Drive Visibility By", items=[('active_bone','Active Bone','Attribute depends on certain object',0),('data_path','Data Path','Attribute depends on certain the data path value ',1)])
+    bone_pointer : StringProperty(name="Bone")
+    visible_pointer : BoolProperty(name="Visible", default=True)
 
     def execute(self, context):
         o = get_edited_object(context)
         a = get_attribute_by_path(context,self.panel_name, self.path)
         if a:
-            if 'visibility' in a:
-                a['visibility']['variable'] = self.visibility_variable
-                a['visibility']['value'] = self.visibility_value
+            a['visibility'] = {}
+            a['visibility']['variable'] = self.variable_type
+            if self.variable_type == "active_bone":
+                if context.scene.nextr_rig_object_pointer.name:
+                    if context.scene.nextr_rig_object_pointer.type == "ARMATURE":
+                        if not self.bone_pointer:
+                            self.report({'WARNING'}, "You need to set the bone! Did not save!")
+                            return {'CANCELLED'}
+                        a['visibility']['object'] = context.scene.nextr_rig_object_pointer.name
+                        a['visibility']['bone'] = self.bone_pointer
+                    a['visibility']['value'] = self.visible_pointer
+                else:
+                    self.report({'WARNING'}, "You need to set the object! Did not save!")
+                    return {'CANCELLED'}
             else:
-                a['visibility'] = {'variable': self.visibility_variable, 'value': self.visibility_value}
+                a['visibility']['data_path'] = self.visibility_data_path
+                a['visibility']['value'] = self.visibility_value
             a['name'] = self.name
             a['path'] = self.path
             
@@ -331,30 +346,30 @@ class OPS_OT_EditAttribute(Operator):
                 else:
                     new_attributes.append(attribute)
             o.data['nextrrig_attributes'][self.panel_name] = new_attributes
+        self.report({'INFO'}, "Successfully updated attribute")
         return {'FINISHED'}
 
     def invoke(self, context, event):
         self.attribute = get_attribute_by_path(context, self.panel_name, self.path)        
         if not self.attribute:
             return {"CANCELED"}
-
-        # might work on this some day, now you need to the name manually
-        # items = [('none', 'Always Visible', 'Attribute is going to be always visible',0)]
-        # # self.variables_enum : EnumProperty(name="Variables", items=items)
-        # o = get_edited_object(context)
-        # for key,prop in enumerate(o.data['nextrrig_properties']):
-        #     name = prop
-        #     try:
-        #         name = getattr(bpy.types.Armature.nextrrig_properties[1]['type'],prop)[1]['name']
-        #     except:
-        #         continue
-        #     items.append((prop, name, 'Variable used for visibility', key+1))
         if 'visibility' in self.attribute:
-            self.visibility_variable = self.attribute['visibility']['variable']
-            self.visibility_value = self.attribute['visibility']['value']
+            if self.attribute['visibility']['variable'] == "active_bone":
+                try:
+                    self.visible_pointer =  self.attribute['visibility']['value']
+                    self.bone_pointer = self.attribute['visibility']['bone']
+                    context.scene.nextr_rig_object_pointer = bpy.data.objects[self.attribute['visibility']['object']]
+                except:
+                    print("No prev values")
+            else:
+                try:
+                    self.visibility_data_path = self.attribute['visibility']['data_path']
+                    self.visibility_value = self.attribute['visibility']['value']
+                except:
+                    print("No prev values")
         else:
             self.visibility_value = 0
-            self.visibility_variable = ""
+            self.visibility_data_path = ""
         self.panels = self.panel_name
         self.name = self.attribute['name'] if self.attribute['name'] else "Default Value" 
 
@@ -369,8 +384,16 @@ class OPS_OT_EditAttribute(Operator):
         box.prop(self, 'panels')
         box_visibility = box.box()
         box_visibility.label(text="Visibility")
-        box_visibility.prop(self, "visibility_variable")
-        box_visibility.prop(self, 'visibility_value')
+        box_visibility.prop(self, "variable_type")
+        
+        if self.variable_type == 'active_bone':
+            box_visibility.prop(context.scene, 'nextr_rig_object_pointer')
+            if context.scene.nextr_rig_object_pointer.type == "ARMATURE":
+                box_visibility.prop_search(self, 'bone_pointer', context.scene.nextr_rig_object_pointer.data, 'bones')
+            box_visibility.prop(self, "visible_pointer", icon="RESTRICT_VIEW_OFF" if self.visible_pointer else "RESTRICT_VIEW_ON", text="Show when selected" if self.visible_pointer else "Show when NOT selected")
+        elif self.variable_type == 'data_path':
+            box_visibility.prop(self, "visibility_data_path")
+            box_visibility.prop(self, 'visibility_value')
         if 'synced' in self.attribute:
             if self.attribute['synced']:
                 box_synced = box.box()
@@ -590,6 +613,7 @@ def register():
     for c in classes:
         register_class(c)
     bpy.types.WM_MT_button_context.append(render_copy_data_path)
+    bpy.types.Scene.nextr_rig_object_pointer = PointerProperty(type=bpy.types.Object,name="Object", description="Select an object or an Armature to use it as a driver for visibility of the attribute.")
 
 def unregister():
     bpy.types.WM_MT_button_context.remove(render_copy_data_path)
