@@ -3,6 +3,14 @@ from bpy.types import (Panel, Operator, PropertyGroup, Menu)
 from bpy.props import EnumProperty, BoolProperty, StringProperty, IntProperty, FloatVectorProperty, CollectionProperty, PointerProperty
 import bpy
 
+bl_info = {
+    "name": "Nextr Rig UI Debugger",
+    "description": "Script helps you to create menus just by clicking",
+    "author": "Nextr3D",
+    "version": (1, 0, 1),
+    "blender": (2, 92, 0)
+}
+
 def get_rig(name):
     if name in bpy.data.objects:
         if bpy.data.objects[name].type == 'ARMATURE':
@@ -322,17 +330,15 @@ class OPS_OT_EditAttribute(Operator):
             a['visibility'] = {}
             a['visibility']['variable'] = self.variable_type
             if self.variable_type == "active_bone":
-                if context.scene.nextr_rig_object_pointer.name:
-                    if context.scene.nextr_rig_object_pointer.type == "ARMATURE":
-                        if not self.bone_pointer:
-                            self.report({'WARNING'}, "You need to set the bone! Did not save!")
-                            return {'CANCELLED'}
-                        a['visibility']['object'] = context.scene.nextr_rig_object_pointer.name
-                        a['visibility']['bone'] = self.bone_pointer
-                    a['visibility']['value'] = self.visible_pointer
-                else:
-                    self.report({'WARNING'}, "You need to set the object! Did not save!")
-                    return {'CANCELLED'}
+                if hasattr(context.scene, 'nextr_rig_object_pointer') and hasattr(context.scene.nextr_rig_object_pointer, 'name'):
+                    if context.scene.nextr_rig_object_pointer.name:
+                        if context.scene.nextr_rig_object_pointer.type == "ARMATURE":
+                            if not self.bone_pointer:
+                                self.report({'WARNING'}, "You need to set the bone! Did not save!")
+                                return {'CANCELLED'}
+                            a['visibility']['object'] = context.scene.nextr_rig_object_pointer.name
+                            a['visibility']['bone'] = self.bone_pointer
+                        a['visibility']['value'] = self.visible_pointer
             else:
                 a['visibility']['data_path'] = self.visibility_data_path
                 a['visibility']['value'] = self.visibility_value
@@ -388,8 +394,9 @@ class OPS_OT_EditAttribute(Operator):
         
         if self.variable_type == 'active_bone':
             box_visibility.prop(context.scene, 'nextr_rig_object_pointer')
-            if context.scene.nextr_rig_object_pointer.type == "ARMATURE":
-                box_visibility.prop_search(self, 'bone_pointer', context.scene.nextr_rig_object_pointer.data, 'bones')
+            if hasattr(context.scene, 'nextr_rig_object_pointer') and hasattr(context.scene.nextr_rig_object_pointer,'type'):
+                if context.scene.nextr_rig_object_pointer.type == "ARMATURE":
+                    box_visibility.prop_search(self, 'bone_pointer', context.scene.nextr_rig_object_pointer.data, 'bones')
             box_visibility.prop(self, "visible_pointer", icon="RESTRICT_VIEW_OFF" if self.visible_pointer else "RESTRICT_VIEW_ON", text="Show when selected" if self.visible_pointer else "Show when NOT selected")
         elif self.variable_type == 'data_path':
             box_visibility.prop(self, "visibility_data_path")
