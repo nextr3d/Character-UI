@@ -318,7 +318,7 @@ class OPS_OT_EditAttribute(Operator):
     name : StringProperty(default='Default Value', name="Attribute's Name")
     attribute : {}
     visibility_value: IntProperty(name="Visibility Value", description="On which value of the variable show the attribute in the UI")
-    visibility_data_path : StringProperty(name='Data Path')
+    visibility_data_path : StringProperty(name='Data Path', description="Data path to the value you want to use as a driver for the visibility, use the whole data path!")
     variable_type : EnumProperty(name="Drive Visibility By", items=[('active_bone','Active Bone','Attribute depends on certain object',0),('data_path','Data Path','Attribute depends on certain the data path value ',1)])
     bone_pointer : StringProperty(name="Bone")
     visible_pointer : BoolProperty(name="Visible", default=True)
