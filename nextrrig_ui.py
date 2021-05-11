@@ -8,7 +8,7 @@ bl_info = {
     "name": "Nextr Rig UI",
     "description": "Script which generates nice UI for your rigs",
     "author": "Nextr3D",
-    "version": (4, 2, 0),
+    "version": (4, 2, 1),
     "blender": (2, 92, 0)
 }
 
@@ -44,16 +44,17 @@ def render_attributes(element, panel_name, attributes):
             for p in attributes[panel_name]:
                 render = True
                 if 'visibility' in p:
-                    if p['visibility']['variable']:
+                    if 'variable' in p['visibility'] and p['visibility']['variable']:
                         if p['visibility']['variable'] == 'active_bone':
-                            if p['visibility']['object'] and p['visibility']['object'] in bpy.data.objects:
-                                if bpy.data.objects[p['visibility']['object']].type == "ARMATURE":
-                                    if p['visibility']['bone'] and p['visibility']['bone'] in bpy.data.objects[p['visibility']['object']].data.bones:
-                                        render = True if bpy.data.objects[p['visibility']['object']].data.bones.active.name == p['visibility']['bone'] else False
-                                        if render:
-                                            render = bpy.data.objects[p['visibility']['object']].data.bones.active.select
-                                        if not p['visibility']['value']:
-                                            render = not render
+                            if 'object' in p['visibility']:
+                                if p['visibility']['object'] and p['visibility']['object'] in bpy.data.objects:
+                                    if bpy.data.objects[p['visibility']['object']].type == "ARMATURE":
+                                        if p['visibility']['bone'] and p['visibility']['bone'] in bpy.data.objects[p['visibility']['object']].data.bones:
+                                            render = True if bpy.data.objects[p['visibility']['object']].data.bones.active.name == p['visibility']['bone'] else False
+                                            if render:
+                                                render = bpy.data.objects[p['visibility']['object']].data.bones.active.select
+                                            if not p['visibility']['value']:
+                                                render = not render
                         else:
                             try:
                                 render = eval(p['visibility']['data_path']) == p['visibility']['value']
@@ -113,8 +114,11 @@ class Nextr_Rig(PropertyGroup):
             default = self.get_property("outfits_enum")
             if default == None:
                 default = len(options) - 1
-            self.ui_setup_enum("outfits_enum", self.update_outfits,"Outfits", "Changes outfits", options, default)
-            self.ui_build_outfit_buttons(outfits)
+            try:
+                self.ui_setup_enum("outfits_enum", self.update_outfits,"Outfits", "Changes outfits", options, default)
+                self.ui_build_outfit_buttons(outfits)
+            except:
+                pass
 
     @classmethod
     def ui_build_outfit_buttons(self, collections):
@@ -168,7 +172,10 @@ class Nextr_Rig(PropertyGroup):
             default = 0
             if "hair_enum" in data:
                 default = data["hair_enum"]
-            self.ui_setup_enum('hair_enum', self.update_hair, "Hairdos", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
+            try:
+                self.ui_setup_enum('hair_enum', self.update_hair, "Hairdos", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
+            except:
+                pass
 
     @classmethod
     def get_property(self, property_name):
@@ -230,24 +237,6 @@ class Nextr_Rig(PropertyGroup):
             )
             setattr(self, property_name, prop)
 
-    @classmethod
-    def ui_setup_vector(self, property_name,update_function,name = 'Name', description = 'Empty description', subtype = "NONE", size = 3,  precission = 4,default = (0.0,0.0,0.0), min = 0.0, max = 0.0):
-        rig_data = get_rig().data
-        if hasattr(rig_data, 'nextrrig_properties'):    
-            rig_data.nextrrig_properties[property_name] =  default
-            prop = FloatVectorProperty(
-                name=name,
-                description = description,
-                update=update_function,
-                subtype=subtype,
-                precision=precission,
-                size=size,
-                default=default,
-                min = min,
-                max = max
-            )
-            setattr(self, property_name, prop) 
-
     @staticmethod
     def update_outfit_pieces_visibility():
         "updates visibility of an outfit object, updates masks and applies shapekeys"
@@ -299,13 +288,12 @@ class Nextr_Rig(PropertyGroup):
 
     @staticmethod
     def update_hair_by_outfit(outfit_name):
-        nextr_props = get_rig().data.nextrrig_properties
         hair_collection = [*bpy.data.collections[character_name+ " Hair"].children, *bpy.data.collections[character_name+ " Hair"].objects]
         update_hair = False
         for i in range(len(hair_collection)):
             if outfit_name in hair_collection[i].name:
                 update_hair = True
-                nextr_props["hair_enum"] = i
+                getattr(get_rig().data, 'nextrrig_properties')["hair_enum"] = i
         if update_hair:
             for h in hair_collection:
                 if outfit_name in h.name:
@@ -315,33 +303,32 @@ class Nextr_Rig(PropertyGroup):
 
     def update_hair(self, context):
         "updates hairdos"
-        nextr_props = context.object.data.nextrrig_properties
         hair_collection = [*bpy.data.collections[character_name+ " Hair"].children, *bpy.data.collections[character_name+ " Hair"].objects]
         for c in hair_collection:
             c.hide_viewport = c.hide_render = True
-        index = nextr_props['hair_enum']
+        index = getattr(context.object.data, 'nextrrig_properties')['hair_enum']
         hair_collection[index].hide_viewport = hair_collection[index].hide_render = False
 
     def update_outfits(self, context):
         Nextr_Rig.update_outfit_pieces_visibility()
-        nextr_props = context.object.data.nextrrig_properties
-        if "hair_lock" in nextr_props:
-            if not nextr_props["hair_lock"]:
-                Nextr_Rig.update_hair_by_outfit(bpy.data.collections[character_name+" Outfits"].children[nextr_props["outfits_enum"]].name)
+        props = getattr(context.object.data, 'nextrrig_properties')
+        if "hair_lock" in props:
+            if not props["hair_lock"]:
+                Nextr_Rig.update_hair_by_outfit(bpy.data.collections[character_name+" Outfits"].children[props["outfits_enum"]].name)
         
     def update_outfit_pieces(self, context):
         Nextr_Rig.update_outfit_pieces_visibility()
 
     def update_physics(self, context):
         "updates all of the values in the physics modifier on a cage"
-        nextr_props = context.object.data.nextrrig_properties
+        props = getattr(context.object.data, 'nextrrig_properties')
         if context.object.name+" Body Physics" in bpy.data.collections:
             for o in bpy.data.collections[context.object.name+" Body Physics"].objects:
                 for m in o.modifiers:
                     if m.type == "CLOTH":
-                        m.settings.quality = nextr_props[o.name.replace(" ","_")+"_quality"]
-                        m.point_cache.frame_start = nextr_props[o.name.replace(" ","_")+"_frame_start"]
-                        m.point_cache.frame_end = nextr_props[o.name.replace(" ","_")+"_frame_end"]
+                        m.settings.quality = props[o.name.replace(" ","_")+"_quality"]
+                        m.point_cache.frame_start = props[o.name.replace(" ","_")+"_frame_start"]
+                        m.point_cache.frame_end = props[o.name.replace(" ","_")+"_frame_end"]
     
     def post_depsgraph_update(self, context):
         data = get_rig().data
@@ -428,37 +415,39 @@ class VIEW3D_PT_outfits(VIEW3D_PT_nextrRig):
 
     def draw(self, context):
         layout = self.layout
-        props = context.object.data.nextrrig_properties
+        props = getattr(context.object.data, 'nextrrig_properties')
 
-        box = layout.box()
-        box.label(text="Outfit", icon="MATCLOTH")
-        if len(bpy.data.collections[character_name+" Outfits"].children) == 1:
-            box.operator("nextr.empty", text=bpy.data.collections[character_name+" Outfits"].children[0].name, emboss=False, depress=True)
-        else:
-            box.prop(props, "outfits_enum")
-        for o in bpy.data.collections[character_name+" Outfits"].children[props['outfits_enum']].objects:
-            is_top_child = True #True because if no parent than it's the top child
-            if not o.parent == None:
-                is_top_child = not o.users_collection[0] == o.parent.users_collection[0] #parent is in different collection so it has to 
-            if is_top_child:
-                render_outfit_piece(o,box, props)
-        
-        locked_pieces = {}
-        
-        for i, c in enumerate(bpy.data.collections[character_name+" Outfits"].children):
-            pieces = []
-            for o in c.objects:
-                if i != props["outfits_enum"]:
-                    name = o.name.replace(" ", "_")+"_outfit_toggle"
-                    if props[name+"_lock"]:
-                        pieces.append(o)
-            if len(pieces):
-                locked_pieces[c.name] = pieces
+        if hasattr(props, 'outfits_enum'):
+            box = layout.box()
+            box.label(text="Outfit", icon="MATCLOTH")
+            if len(bpy.data.collections[character_name+" Outfits"].children) == 1:
+                box.operator("nextr.empty", text=bpy.data.collections[character_name+" Outfits"].children[0].name, emboss=False, depress=True)
+            else:
+                box.prop(props, "outfits_enum")
+            if len(bpy.data.collections[character_name+" Outfits"].children):
+                for o in bpy.data.collections[character_name+" Outfits"].children[props['outfits_enum']].objects:
+                    is_top_child = True #True because if no parent than it's the top child
+                    if not o.parent == None:
+                        is_top_child = not o.users_collection[0] == o.parent.users_collection[0] #parent is in different collection so it has to 
+                    if is_top_child:
+                        render_outfit_piece(o,box, props)
+                
+                locked_pieces = {}
+                
+                for i, c in enumerate(bpy.data.collections[character_name+" Outfits"].children):
+                    pieces = []
+                    for o in c.objects:
+                        if i != props["outfits_enum"]:
+                            name = o.name.replace(" ", "_")+"_outfit_toggle"
+                            if props[name+"_lock"]:
+                                pieces.append(o)
+                    if len(pieces):
+                        locked_pieces[c.name] = pieces
 
-        for n,pcs in locked_pieces.items():
-            box.operator('nextr.empty', text=n,  emboss=False, depress=True)
-            for p in  pcs:
-                render_outfit_piece(p, box, props)
+                for n,pcs in locked_pieces.items():
+                    box.operator('nextr.empty', text=n,  emboss=False, depress=True)
+                    for p in  pcs:
+                        render_outfit_piece(p, box, props)
         render_attributes(layout, 'outfits', context.object.data.nextrrig_attributes)
 
 class VIEW3D_PT_links(VIEW3D_PT_nextrRig):
@@ -486,7 +475,7 @@ class VIEW3D_PT_body(VIEW3D_PT_nextrRig):
 
     def draw(self, context):
         layout = self.layout
-        nextr_props = context.object.data.nextrrig_properties
+        nextr_props = getattr(get_rig().data, 'nextrrig_properties')
         if hasattr(nextr_props, "hair_enum"):
             box = layout.box()
             box.label(text="Hair", icon="OUTLINER_OB_HAIR")
