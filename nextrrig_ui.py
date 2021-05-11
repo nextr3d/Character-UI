@@ -12,7 +12,7 @@ bl_info = {
     "name": "Nextr Rig UI",
     "description": "Script which generates nice UI for your rigs",
     "author": "Nextr3D",
-    "version": (4, 2, 1),
+    "version": (4, 3, 0),
     "blender": (2, 92, 0)
 }
 

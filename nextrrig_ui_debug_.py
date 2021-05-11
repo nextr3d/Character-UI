@@ -7,7 +7,7 @@ bl_info = {
     "name": "Nextr Rig UI Debugger",
     "description": "Script helps you to create menus just by clicking",
     "author": "Nextr3D",
-    "version": (1, 0, 1),
+    "version": (1, 1, 0),
     "blender": (2, 92, 0)
 }
 
