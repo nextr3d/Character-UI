@@ -74,12 +74,14 @@ class VIEW3D_PT_nextr_rig_debug(Panel):
                 if context.scene['active_object']:
                     pinned = True 
             layout.operator('nextr_debug.pin_active_object', text="Unpin "+o.name if pinned else "Pin "+o.name, depress=pinned, icon="PINNED" if pinned else "UNPINNED")
+            layout.prop(context.scene, 'nextr_rig_properties_key')
+            layout.prop(context.scene, 'nextr_rig_attributes_key')
             if o.type != 'ARMATURE':
                 layout.operator('nextr.empty', text="Warning, object is not an Armature", depress=True, emboss=False)
-            if "nextrrig_properties" not in o.data or 'nextrrig_attributes' not in o.data:
+            if context.scene["nextr_rig_properties_key"] not in o.data or context.scene["nextr_rig_attributes_key"] not in o.data:
                 layout.operator('nextr_debug.enable_rig').object_name = o.name
             else:
-                layout.operator('nextr.empty', text="Object is Nextr Rig enabled", depress=True, emboss=False)
+                layout.operator('nextr.empty', text="Object is UI enabled", depress=True, emboss=False)
                 has_outfits = o.name+" Outfits" in bpy.data.collections
                 has_hair = o.name+" Hair" in bpy.data.collections
                 has_body = o.name+" Body" in bpy.data.collections
@@ -146,19 +148,20 @@ class VIEW3D_PT_nextr_rig_debug_attributes(Panel):
         layout = self.layout
         if context.active_object:
             o = get_edited_object(context)
-            if 'nextrrig_attributes' in o.data:
+            attributes_key = context.scene['nextr_rig_attributes_key']
+            if attributes_key in o.data:
                 box_outfits = layout.box()
 
                 box_outfits.label(text="Attributes for Outfits Panel")
-                render_attributes(box_outfits, 'outfits', o.data['nextrrig_attributes'])
+                render_attributes(box_outfits, 'outfits', o.data[attributes_key])
                 box_body = layout.box()
                 box_body.label(text="Attributes for Body Panel")
-                render_attributes(box_body, 'body', o.data['nextrrig_attributes'])
+                render_attributes(box_body, 'body', o.data[attributes_key])
                 box_rig_layers = layout.box()
                 box_rig_layers.label(text="Attributes for Rig Layers Panel")
-                render_attributes(box_rig_layers, 'rig', o.data['nextrrig_attributes'])
+                render_attributes(box_rig_layers, 'rig', o.data[attributes_key])
             else:
-                layout.operator('nextr.empty', text="Object needs to be Nextr Rig enabled to add custom attributes to it!", depress=True, emboss=False)
+                layout.operator('nextr.empty', text="Object needs to be UI enabled to add custom attributes to it!", depress=True, emboss=False)
 class OPS_OT_EnableNextrRig(Operator):
     bl_idname = 'nextr_debug.enable_rig'
     bl_label = 'Enable Nextrrig on object'
@@ -177,9 +180,9 @@ class OPS_OT_EnableNextrRig(Operator):
             for c in o.users_collection:
                 c.objects.unlink(o)
             master_collection.objects.link(o)
-            o.data['nextrrig_properties'] = {}
-            o.data['nextrrig_attributes'] = {}
-            bpy.context.active_object = o
+            o.data[context.scene["nextr_rig_properties_key"]] = {}
+            o.data[context.scene["nextr_rig_attributes_key"]] = {}
+            bpy.context.scene.object.active = o
         return {'FINISHED'}
 
 class OPS_OT_AddCollection(Operator):
@@ -227,10 +230,11 @@ class OPS_OT_AddAttribute(Operator):
             name = False
         if context.active_object:
             o = get_edited_object(context)
-            if 'nextrrig_attributes' in o.data:
+            attributes_key = context.scene["nextr_rig_attributes_key"]
+            if attributes_key in o.data:
                 arr = []
-                if self.panel_name in o.data['nextrrig_attributes']:
-                    arr = o.data['nextrrig_attributes'][self.panel_name]
+                if self.panel_name in o.data[attributes_key]:
+                    arr = o.data[attributes_key][self.panel_name]
                     if self.parent_path:
                         arr = sync_attribute_to_parent(arr, self.parent_path, path)
                     else:
@@ -239,17 +243,17 @@ class OPS_OT_AddAttribute(Operator):
                         except:
                             arr = []
                             arr.append({'path': path, 'name':name})
-                    o.data['nextrrig_attributes'][self.panel_name] = arr
+                    o.data[attributes_key][self.panel_name] = arr
                 else:
                     arr.append({'path': path, 'name':name})
-                    o.data['nextrrig_attributes'][self.panel_name] = arr
+                    o.data[attributes_key][self.panel_name] = arr
                 
                 if name:
                     self.report({'INFO'}, 'Added attribute '+ name +' to '+o.name)
                 else:
                     self.report({'INFO'}, 'Added attribute to '+o.name)
             else:
-                self.report({'WARNING'}, o.name + ' is not Nextr Rig enabled! You must enable it first.')
+                self.report({'WARNING'}, o.name + ' is not UI enabled! You must enable it first.')
         self.panel_name = ""
         self.parent_path = ""
         return {'FINISHED'}
@@ -268,6 +272,8 @@ class OPS_OT_PinActiveObject(Operator):
                 else:
                     context.scene['active_object'] = context.active_object
                     self.report({'INFO'}, "Pinned "+context.active_object.name)
+                    context.scene['nextr_rig_properties_key'] = context.active_object.name+"_properties"
+                    context.scene['nextr_rig_attributes_key'] = context.active_object.name+"_attributes"
             else:
                 context.scene['active_object'] = context.active_object
                 self.report({'INFO'}, "Pinned "+context.active_object.name)
@@ -346,12 +352,13 @@ class OPS_OT_EditAttribute(Operator):
             a['path'] = self.path
             
             new_attributes = []
-            for attribute in o.data['nextrrig_attributes'][self.panel_name]:
+            attributes_key = context.scene['nextr_rig_attributes_key']
+            for attribute in o.data[attributes_key][self.panel_name]:
                 if attribute['path'] == self.path:
                     new_attributes.append(a)
                 else:
                     new_attributes.append(attribute)
-            o.data['nextrrig_attributes'][self.panel_name] = new_attributes
+            o.data[attributes_key][self.panel_name] = new_attributes
         self.report({'INFO'}, "Successfully updated attribute")
         return {'FINISHED'}
 
@@ -431,12 +438,13 @@ class OPS_OT_RemoveSyncedAttribute(Operator):
             a['synced'] = synced.remove(self.attribute_path)
             o = get_edited_object(context)
             new_attributes = []
-            for attribute in o['nextrrig_attributes'][self.panel_name]:
+            attributes_key = context.scene['nextr_rig_attributes_key']
+            for attribute in o[attributes_key][self.panel_name]:
                 if attribute['path'] == self.attribute_path:
                     new_attributes.append(a)
                 else:
                     new_attributes.append(attribute)
-            o['nextrrig_attributes'][self.panel_name] = new_attributes
+            o[attributes_key][self.panel_name] = new_attributes
             self.report({'INFO'}, 'Removed synced attribute')
             return {'FINISHED'}
             
@@ -453,14 +461,15 @@ class OPS_OT_RemoveAttribute(Operator):
         
         if context.active_object:
             o = get_edited_object(context)
-            if 'nextrrig_attributes' in o.data:
-                if self.panel_name in o.data['nextrrig_attributes']:
-                    att = o.data['nextrrig_attributes'][self.panel_name]
+            attributes_key = context.scene['nextr_rig_attributes_key']
+            if attributes_key in o.data:
+                if self.panel_name in o.data[attributes_key]:
+                    att = o.data[attributes_key][self.panel_name]
                     new_att = []
                     for a in att:
                         if a['path'] != self.path:
                             new_att.append(a)
-                    o.data['nextrrig_attributes'][self.panel_name] = new_att
+                    o.data[attributes_key][self.panel_name] = new_att
                     self.report({"INFO"}, 'Removed property')
         return {'FINISHED'}
 
@@ -544,8 +553,9 @@ def render_attributes(element, panel_name, attributes):
 def render_attributes_in_menu(layout, context, panel):
     if context.active_object:
         o = get_edited_object(context)
-        if panel in o.data['nextrrig_attributes']:
-            for p in o.data['nextrrig_attributes'][panel]:
+        attributes_key = context.scene['nextr_rig_attributes_key']
+        if panel in o.data[attributes_key]:
+            for p in o.data[attributes_key][panel]:
                 name = "Default Value"
                 
                 if p['name']:
@@ -556,7 +566,8 @@ def render_attributes_in_menu(layout, context, panel):
     return layout
 
 def render_copy_data_path(self, context):
-    if 'nextrrig_attributes' in get_edited_object(context).data:
+    attributes_key = context.scene['nextr_rig_attributes_key']
+    if attributes_key in get_edited_object(context).data:
         layout = self.layout
         layout.separator()
         layout.label(text='Nextr Rig Debugger')
@@ -582,9 +593,10 @@ def sync_attribute_to_parent(attributes, parent_path, path):
 def get_attribute_by_path(context, panel_name, path):
     if context.active_object:
         o = get_edited_object(context)
-        if 'nextrrig_attributes' in o.data:
-            if panel_name in o.data['nextrrig_attributes']:
-                for a in o.data['nextrrig_attributes'][panel_name]:
+        attributes_key = context.scene['nextr_rig_attributes_key']
+        if attributes_key in o.data:
+            if panel_name in o.data[attributes_key]:
+                for a in o.data[attributes_key][panel_name]:
                     if path == a['path']:
                         return a
     return False
@@ -607,6 +619,9 @@ WM_MT_sync_attribute_rig_menu,
 OPS_OT_RemoveAttribute,
 OPS_OT_EditAttribute,
 OPS_OT_RemoveSyncedAttribute)
+def setup_custom_keys():
+    setattr(bpy.types.Scene, 'nextr_rig_properties_key', ui_setup_string(None, "Custom name for the properties key", "if you in the ui script changed what the key's value is", get_edited_object(bpy.context).name+'_properties'))
+    setattr(bpy.types.Scene, 'nextr_rig_attributes_key', ui_setup_string(None, "Custom name for the attributes key", "if you in the ui script changed what the key's value is", get_edited_object(bpy.context).name+'_attributes'))
 
 def setup_rig_layers():
     for i in range(31):
@@ -616,6 +631,7 @@ def setup_rig_layers():
         setattr(bpy.types.Scene, 'nextr_rig_layers_index_'+str(i), ui_setup_int(None, "","Which rig layers is going to be affected by this toggle",i,0,31))
 
 def register():
+    setup_custom_keys()
     setup_rig_layers()
     for c in classes:
         register_class(c)
