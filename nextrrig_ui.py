@@ -60,10 +60,11 @@ def render_attributes(element, panel_name, attributes):
                                             if not p['visibility']['value']:
                                                 render = not render
                         else:
-                            try:
-                                render = eval(p['visibility']['data_path']) == p['visibility']['value']
-                            except:
-                                continue
+                            if p['visibility']['data_path'] != "":
+                                try:
+                                    render = eval(p['visibility']['data_path']) == p['visibility']['value']
+                                except:
+                                    continue
                 if render:
                     row = box.row(align=True)
                     delimiter = '][' if '][' in p['path'] else '.'
