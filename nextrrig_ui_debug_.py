@@ -361,8 +361,12 @@ class OPS_OT_EditAttribute(Operator):
                     else:
                         different_panel_attributes = []
                         if self.panels in o.data[attributes_key]:
-                            different_panel_attributes = o.data[attributes_key][self.panels].to_list()
-                            different_panel_attributes.append(a)
+                            try:
+                                different_panel_attributes = o.data[attributes_key][self.panels].to_list()
+                                different_panel_attributes.append(a)
+                            except:
+                                different_panel_attributes = o.data[attributes_key][self.panels]
+                                different_panel_attributes.append(a)    
                         else:
                             different_panel_attributes.append(a)
                         o.data[attributes_key][self.panels] = different_panel_attributes
