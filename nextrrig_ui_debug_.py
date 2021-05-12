@@ -457,8 +457,10 @@ class OPS_OT_RemoveAttribute(Operator):
     path : StringProperty()
     panel_name : StringProperty()
 
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self,event)
+
     def execute(self, context):
-        
         if context.active_object:
             o = get_edited_object(context)
             attributes_key = context.scene['nextr_rig_attributes_key']
@@ -471,6 +473,37 @@ class OPS_OT_RemoveAttribute(Operator):
                             new_att.append(a)
                     o.data[attributes_key][self.panel_name] = new_att
                     self.report({"INFO"}, 'Removed property')
+        return {'FINISHED'}
+class OPS_OT_AttributeChangePosition(Operator):
+    bl_idname = 'nextr_debug.attribute_change_position'
+    bl_label = "Change attributes position in the list"
+    bl_description = "Changes position of the attribute in the current list"
+    path : StringProperty()
+    panel_name : StringProperty()
+    direction : BoolProperty() #True moves up, False move down
+    
+    def execute(self, context):
+        if context.active_object:
+            o = get_edited_object(context)
+            attributes_key = context.scene['nextr_rig_attributes_key']
+            if attributes_key in o.data:
+                if self.panel_name in o.data[attributes_key]:
+                    att = o.data[attributes_key][self.panel_name]
+                    i = 0
+                    for a in enumerate(att):
+                        if a[1]['path'] == self.path:
+                            i = a[0]
+                    if self.direction and i-1 >= 0: #move attribute up in the list
+                        prev = att[i-1]
+                        att[i-1] = att[i]
+                        att[i] = prev
+                        self.report({'INFO'}, "Moved attribute up in the list")
+                    elif not self.direction and i+1 < len(att):
+                        next = att[i+1]
+                        att[i+1] = att[i]
+                        att[i] = next
+                        self.report({'INFO'}, "Moved attribute down in the list")
+                    o.data[attributes_key][self.panel_name] = att
         return {'FINISHED'}
 
 class WM_MT_button_context(Menu):
@@ -545,6 +578,17 @@ def render_attributes(element, panel_name, attributes):
             op_edit = row.operator(OPS_OT_EditAttribute.bl_idname, icon="PREFERENCES", text="")
             op_edit.path = p['path']
             op_edit.panel_name = panel_name
+
+            op_up = row.operator(OPS_OT_AttributeChangePosition.bl_idname, icon="TRIA_UP", text="")
+            op_up.direction = True
+            op_up.path = p['path']
+            op_up.panel_name = panel_name
+
+            op_down = row.operator(OPS_OT_AttributeChangePosition.bl_idname, icon="TRIA_DOWN", text="")
+            op_down.direction = False
+            op_down.path = p['path']
+            op_down.panel_name = panel_name
+
             op = row.operator(OPS_OT_RemoveAttribute.bl_idname, icon="TRASH", text="")
             op.path = p['path']
             op.panel_name = panel_name
@@ -618,7 +662,8 @@ WM_MT_sync_attribute_body_menu,
 WM_MT_sync_attribute_rig_menu,
 OPS_OT_RemoveAttribute,
 OPS_OT_EditAttribute,
-OPS_OT_RemoveSyncedAttribute)
+OPS_OT_RemoveSyncedAttribute,
+OPS_OT_AttributeChangePosition)
 def setup_custom_keys():
     setattr(bpy.types.Scene, 'nextr_rig_properties_key', ui_setup_string(None, "Custom name for the properties key", "if you in the ui script changed what the key's value is", get_edited_object(bpy.context).name+'_properties'))
     setattr(bpy.types.Scene, 'nextr_rig_attributes_key', ui_setup_string(None, "Custom name for the attributes key", "if you in the ui script changed what the key's value is", get_edited_object(bpy.context).name+'_attributes'))
