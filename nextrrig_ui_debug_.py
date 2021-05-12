@@ -332,6 +332,7 @@ class OPS_OT_EditAttribute(Operator):
     def execute(self, context):
         o = get_edited_object(context)
         a = get_attribute_by_path(context,self.panel_name, self.path)
+        
         if a:
             a['visibility'] = {}
             a['visibility']['variable'] = self.variable_type
@@ -355,10 +356,20 @@ class OPS_OT_EditAttribute(Operator):
             attributes_key = context.scene['nextr_rig_attributes_key']
             for attribute in o.data[attributes_key][self.panel_name]:
                 if attribute['path'] == self.path:
-                    new_attributes.append(a)
+                    if self.panels == self.panel_name:
+                        new_attributes.append(a)
+                    else:
+                        different_panel_attributes = []
+                        if self.panels in o.data[attributes_key]:
+                            different_panel_attributes = o.data[attributes_key][self.panels].to_list()
+                            different_panel_attributes.append(a)
+                        else:
+                            different_panel_attributes.append(a)
+                        o.data[attributes_key][self.panels] = different_panel_attributes
                 else:
                     new_attributes.append(attribute)
             o.data[attributes_key][self.panel_name] = new_attributes
+        
         self.report({'INFO'}, "Successfully updated attribute")
         return {'FINISHED'}
 
