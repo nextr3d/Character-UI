@@ -454,12 +454,13 @@ class OPS_OT_RemoveSyncedAttribute(Operator):
             o = get_edited_object(context)
             new_attributes = []
             attributes_key = context.scene['nextr_rig_attributes_key']
-            for attribute in o[attributes_key][self.panel_name]:
-                if attribute['path'] == self.attribute_path:
-                    new_attributes.append(a)
-                else:
-                    new_attributes.append(attribute)
-            o[attributes_key][self.panel_name] = new_attributes
+            if attributes_key in o:
+                for attribute in o[attributes_key][self.panel_name]:
+                    if attribute['path'] == self.attribute_path:
+                        new_attributes.append(a)
+                    else:
+                        new_attributes.append(attribute)
+                o[attributes_key][self.panel_name] = new_attributes
             self.report({'INFO'}, 'Removed synced attribute')
             return {'FINISHED'}
             
