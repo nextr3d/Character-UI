@@ -24,69 +24,81 @@ links = {
     }
 }
 
-def get_rig():
-    "returns an object with the character name"
-    if character_name in bpy.data.objects:
-        return bpy.data.objects[character_name]
-    return False
+class NextrRig_Utils:
+    "class which contains all of the CharacterUI utility methods"
 
-def change_visibility(collection_name, object_name, props):
-    "determines if the clothing piece should  have it's visibility changed"
-    return collection_name == bpy.data.collections[character_name+" Outfits"].children[props['outfits_enum']].name or props[object_name+"_lock"]
+    @staticmethod
+    def get_rigs():
+        "method for all of the nextr rigs"
+        return [o for o in bpy.data.objects if o.type=='ARMATURE' and 'nextr_rig' in o.data]
 
-def render_props(props, name, element, icon="NONE"):
-    "renders a prop if it exists"
-    if hasattr(props, name):
-        element.prop(props, name, icon=icon)
-
-def render_attributes(element, panel_name, attributes):
-    "renders attributes to the UI based on the panels name"
-    if panel_name in attributes:
-        if len(attributes[panel_name]):
-            box = element.box()
-            box.label(text='Attributes', icon='OPTIONS')
-            for p in attributes[panel_name]:
-                render = True
-                if 'visibility' in p:
-                    if 'variable' in p['visibility'] and p['visibility']['variable']:
-                        if p['visibility']['variable'] == 'active_bone':
-                            if 'object' in p['visibility']:
-                                if p['visibility']['object'] and p['visibility']['object'] in bpy.data.objects:
-                                    if bpy.data.objects[p['visibility']['object']].type == "ARMATURE":
-                                        if p['visibility']['bone'] and p['visibility']['bone'] in bpy.data.objects[p['visibility']['object']].data.bones:
-                                            render = True if bpy.data.objects[p['visibility']['object']].data.bones.active.name == p['visibility']['bone'] else False
-                                            if render:
-                                                render = bpy.data.objects[p['visibility']['object']].data.bones.active.select
-                                            if not p['visibility']['value']:
-                                                render = not render
+    @staticmethod
+    def get_rig():
+        "returns an object with the character name"
+        if character_name in bpy.data.objects:
+            return bpy.data.objects[character_name]
+        return False
+    
+    @staticmethod
+    def change_visibility(collection_name, object_name, props):
+        "determines if the clothing piece should  have it's visibility changed"
+        return collection_name == bpy.data.collections[character_name+" Outfits"].children[props['outfits_enum']].name or props[object_name+"_lock"]
+    
+    @staticmethod
+    def render_props(props, name, element, icon="NONE"):
+        "renders a prop if it exists"
+        if hasattr(props, name):
+            element.prop(props, name, icon=icon)
+    
+    @staticmethod
+    def render_attributes(element, panel_name, attributes):
+        "renders attributes to the UI based on the panels name"
+        if panel_name in attributes:
+            if len(attributes[panel_name]):
+                box = element.box()
+                box.label(text='Attributes', icon='OPTIONS')
+                for p in attributes[panel_name]:
+                    render = True
+                    if 'visibility' in p:
+                        if 'variable' in p['visibility'] and p['visibility']['variable']:
+                            if p['visibility']['variable'] == 'active_bone':
+                                if 'object' in p['visibility']:
+                                    if p['visibility']['object'] and p['visibility']['object'] in bpy.data.objects:
+                                        if bpy.data.objects[p['visibility']['object']].type == "ARMATURE":
+                                            if p['visibility']['bone'] and p['visibility']['bone'] in bpy.data.objects[p['visibility']['object']].data.bones:
+                                                render = True if bpy.data.objects[p['visibility']['object']].data.bones.active.name == p['visibility']['bone'] else False
+                                                if render:
+                                                    render = bpy.data.objects[p['visibility']['object']].data.bones.active.select
+                                                if not p['visibility']['value']:
+                                                    render = not render
+                            else:
+                                if p['visibility']['data_path'] != "":
+                                    try:
+                                        render = eval(p['visibility']['data_path']) == p['visibility']['value']
+                                    except:
+                                        continue
+                    if render:
+                        row = box.row(align=True)
+                        delimiter = '][' if '][' in p['path'] else '.'
+                        offset = 1 if '][' in p['path'] else 0
+                        prop = p['path'][p['path'].rindex(delimiter)+1:]
+                        path = p['path'][:p['path'].rindex(delimiter)+offset]
+                        if p['name']:
+                            try:
+                                row.prop(eval(path), prop, text=p['name'])
+                            except:
+                                print("couldn't render ", path, " prop")
                         else:
-                            if p['visibility']['data_path'] != "":
-                                try:
-                                    render = eval(p['visibility']['data_path']) == p['visibility']['value']
-                                except:
-                                    continue
-                if render:
-                    row = box.row(align=True)
-                    delimiter = '][' if '][' in p['path'] else '.'
-                    offset = 1 if '][' in p['path'] else 0
-                    prop = p['path'][p['path'].rindex(delimiter)+1:]
-                    path = p['path'][:p['path'].rindex(delimiter)+offset]
-                    if p['name']:
-                        try:
-                            row.prop(eval(path), prop, text=p['name'])
-                        except:
-                            print("couldn't render ", path, " prop")
-                    else:
-                        try:
-                            row.prop(eval(path), prop)
-                        except:
-                            print("couldn't render ", path, " prop")
+                            try:
+                                row.prop(eval(path), prop)
+                            except:
+                                print("couldn't render ", path, " prop")
 class Nextr_Rig(PropertyGroup):
     @classmethod
     def __init__(self):
         print("Rig initialization ", character_name)
         original_selected = bpy.context.view_layer.objects.active
-        rig = get_rig()
+        rig = NextrRig_Utils.get_rig()
         if rig:
             bpy.context.view_layer.objects.active = rig
             data = rig.data
@@ -127,7 +139,7 @@ class Nextr_Rig(PropertyGroup):
 
     @classmethod
     def ui_build_outfit_buttons(self, collections):
-        data = get_rig().data[properties_name]
+        data = NextrRig_Utils.get_rig().data[properties_name]
         for collection in collections:
             objects = bpy.data.collections[collection].objects
             for o in objects:
@@ -143,7 +155,7 @@ class Nextr_Rig(PropertyGroup):
     @classmethod
     def ui_build_physics(self):
         "builds the UI for physics related controls"
-        nextrrig_properties = getattr(get_rig().data ,properties_name) 
+        nextrrig_properties = getattr(NextrRig_Utils.get_rig().data ,properties_name) 
         if character_name+" Body Physics" in bpy.data.collections:
             for o in bpy.data.collections[character_name+" Body Physics"].objects:
                 #create slider for quality
@@ -165,7 +177,7 @@ class Nextr_Rig(PropertyGroup):
     @classmethod
     def ui_build_hair(self):
         if character_name+" Hair" in bpy.data.collections:
-            data = getattr(get_rig().data ,properties_name) 
+            data = getattr(NextrRig_Utils.get_rig().data ,properties_name) 
             default_value = 0
             if 'hair_lock' in data:
                 default_value = data['hair_lock']
@@ -184,7 +196,7 @@ class Nextr_Rig(PropertyGroup):
 
     @classmethod
     def get_property(self, property_name):
-        data = getattr(get_rig().data ,properties_name) 
+        data = getattr(NextrRig_Utils.get_rig().data ,properties_name) 
         if property_name in data:
             return data[property_name]
         return None
@@ -200,7 +212,7 @@ class Nextr_Rig(PropertyGroup):
     @classmethod
     def ui_setup_enum(self, property_name, update_function, name="Name", description="Empty description", items=[], default=0):
         "method for easier creation of enums (selects)"
-        rig_data = get_rig().data
+        rig_data = NextrRig_Utils.get_rig().data
         if hasattr(rig_data, properties_name):
             rig_data[properties_name][property_name] = default
             prop = EnumProperty(
@@ -215,7 +227,7 @@ class Nextr_Rig(PropertyGroup):
     @classmethod
     def ui_setup_toggle(self, property_name, update_function, name='Name', description='Empty description', default=False):
         "method for easier creation of toggles (buttons)"
-        rig_data = get_rig().data
+        rig_data = NextrRig_Utils.get_rig().data
         if hasattr(rig_data, properties_name):
             getattr(rig_data ,properties_name)[property_name] = default
             prop = BoolProperty(
@@ -229,7 +241,7 @@ class Nextr_Rig(PropertyGroup):
     @classmethod
     def ui_setup_int(self, property_name,update_function,name = 'Name', description = 'Empty description', default = 0, min = 0, max = 1):           
         "method for easier creation of ints (sliders)"
-        rig_data = get_rig().data
+        rig_data = NextrRig_Utils.get_rig().data
         if hasattr(rig_data, properties_name):
             getattr(rig_data ,properties_name)[property_name] = default
             prop =  IntProperty(
@@ -245,14 +257,14 @@ class Nextr_Rig(PropertyGroup):
     @staticmethod
     def update_outfit_pieces_visibility():
         "updates visibility of an outfit object, updates masks and applies shapekeys"
-        props = get_rig().data[properties_name]
+        props = NextrRig_Utils.get_rig().data[properties_name]
         for c in bpy.data.collections[character_name+" Outfits"].children:
             for o in c.objects:
                 t_name = o.name.replace(" ","_")+"_outfit_toggle"
                 is_top_child = True #True because if no parent than it's the top child
                 if not o.parent == None:
                     is_top_child = not o.users_collection[0] == o.parent.users_collection[0] #parent is in different collection so it has to 
-                if change_visibility(c.name, t_name, props):
+                if NextrRig_Utils.change_visibility(c.name, t_name, props):
                     if is_top_child: #object is the first child of it's collection
                         o.hide_render = o.hide_viewport = not props[t_name]
                         Nextr_Rig.update_body_masks_by_object_name(o.name, props[t_name])
@@ -298,7 +310,7 @@ class Nextr_Rig(PropertyGroup):
         for i in range(len(hair_collection)):
             if outfit_name in hair_collection[i].name:
                 update_hair = True
-                getattr(get_rig().data, properties_name)["hair_enum"] = i
+                getattr(NextrRig_Utils.get_rig().data, properties_name)["hair_enum"] = i
         if update_hair:
             for h in hair_collection:
                 if outfit_name in h.name:
@@ -336,7 +348,9 @@ class Nextr_Rig(PropertyGroup):
                         m.point_cache.frame_end = props[o.name.replace(" ","_")+"_frame_end"]
     
     def post_depsgraph_update(self, context):
-        data = get_rig().data
+        "post dependency update, handles synced attributes"
+
+        data = NextrRig_Utils.get_rig().data
         if data[attributes_name]:
             for data_keys in enumerate(data[attributes_name]):
                 panel = data[attributes_name][data_keys[1]]
@@ -344,7 +358,10 @@ class Nextr_Rig(PropertyGroup):
                     if 'synced' in panel[panel_keys[0]]:
                         if panel[panel_keys[0]]['synced']:
                             for attribute_keys in enumerate(panel[panel_keys[0]]['synced']):
-                                exec(attribute_keys[1]+'='+panel[panel_keys[0]]['path'])
+                                try:
+                                    exec(attribute_keys[1]+'='+panel[panel_keys[0]]['path'])
+                                except:
+                                    print("Attributes are not the same type, name: ", panel[panel_keys[0]]['name'], ", path:", panel[panel_keys[0]]['path'])
 
 class Nextr_Rig_Rig_Layers(PropertyGroup):
     rig_layers: [[{'key':0, 'name':'Face'}]]
@@ -415,7 +432,7 @@ def render_outfit_piece(o, element, props, is_child = False):
 class VIEW3D_PT_outfits(VIEW3D_PT_nextrRig):
     bl_label = "Outfits"
     """no idea if this is the correct way but classes with identical ids get destroyed 
-    so this way multiple classes with same(or atleast similar) functionality can exist at the same time"""
+    so this way multiple classes with same(or at least similar) functionality can exist at the same time"""
     bl_idname = "VIEW3D_PT_outfits_"+character_name
 
     def draw(self, context):
@@ -452,7 +469,7 @@ class VIEW3D_PT_outfits(VIEW3D_PT_nextrRig):
                     box.operator('nextr.empty', text=n,  emboss=False, depress=True)
                     for p in  pcs:
                         render_outfit_piece(p, box, props)
-        render_attributes(layout, 'outfits', getattr(context.object.data, attributes_name))
+        NextrRig_Utils.render_attributes(layout, 'outfits', getattr(context.object.data, attributes_name))
 
 class VIEW3D_PT_links(VIEW3D_PT_nextrRig):
     bl_label = "Links"
@@ -479,15 +496,15 @@ class VIEW3D_PT_body(VIEW3D_PT_nextrRig):
 
     def draw(self, context):
         layout = self.layout
-        nextr_props = getattr(get_rig().data, properties_name)
+        nextr_props = getattr(NextrRig_Utils.get_rig().data, properties_name)
         if hasattr(nextr_props, "hair_enum"):
             box = layout.box()
             box.label(text="Hair", icon="OUTLINER_OB_HAIR")
             hair_row = box.row(align=True)
-            render_props(nextr_props, "hair_enum", hair_row)
+            NextrRig_Utils.render_props(nextr_props, "hair_enum", hair_row)
             if hasattr(nextr_props,'hair_lock'):
                 hair_row.prop(nextr_props, "hair_lock", icon="LOCKED" if nextr_props["hair_lock"] else "UNLOCKED", toggle=True )
-        render_attributes(layout,'body', getattr(context.object.data,attributes_name))
+        NextrRig_Utils.render_attributes(layout,'body', getattr(context.object.data,attributes_name))
         
 class VIEW3D_PT_physics_panel(VIEW3D_PT_nextrRig):
     "Physics Sub-Panel"
@@ -515,9 +532,9 @@ class VIEW3D_PT_physics_panel(VIEW3D_PT_nextrRig):
                 column = box.column(align=True)
                 column.active = not baked
                 column.enabled = not baked
-                render_props(nextr_props, o.name.replace(" ","_")+"_quality", column)
-                render_props(nextr_props, o.name.replace(" ","_")+"_frame_start", column)
-                render_props(nextr_props, o.name.replace(" ","_")+"_frame_end", column)
+                NextrRig_Utils.render_props(nextr_props, o.name.replace(" ","_")+"_quality", column)
+                NextrRig_Utils.render_props(nextr_props, o.name.replace(" ","_")+"_frame_start", column)
+                NextrRig_Utils.render_props(nextr_props, o.name.replace(" ","_")+"_frame_end", column)
                 box.operator('nextr.bake', text="Delete Bake" if baked else "Bake").object_name = o.name
                 op = box.operator('nextr.hide_modifier', text="Modifier enabled" if visible else "Modifier disabled", icon="HIDE_OFF" if visible else "HIDE_ON", depress=True if visible else False )
                 op.object_name = o.name
@@ -545,7 +562,7 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_nextrRig):
             for i in range(31):
                 row = box.row(align=True)
                 row.operator('nextr.toggle_rig_layer', text=str(i+1)+' Layer', depress=layers[i]).rig_layer_index = i
-        render_attributes(self.layout, 'rig', getattr(context.object.data, attributes_name))
+        NextrRig_Utils.render_attributes(self.layout, 'rig', getattr(context.object.data, attributes_name))
 
 class OPS_OT_Empty(Operator):
     "for empty operator used only as text"
@@ -565,7 +582,7 @@ class OPS_OT_ToggleRigLayer(Operator):
     rig_layer_index : IntProperty()
 
     def execute(self, context):
-        layers = get_rig().data.layers
+        layers = NextrRig_Utils.get_rig().data.layers
         layers[self.rig_layer_index] = not layers[self.rig_layer_index]
         return{'FINISHED'}
 
@@ -627,7 +644,7 @@ classes = (
     OPS_PT_BakePhysics,
     Nextr_Rig,
     Nextr_Rig_Object_Setting,
-    Nextr_Rig_Rig_Layers,
+    Nextr_Rig_Rig_Layers
     
 )
 
