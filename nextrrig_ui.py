@@ -57,42 +57,50 @@ class NextrRig_Utils:
             if len(attributes[panel_name]):
                 box = element.box()
                 box.label(text='Attributes', icon='OPTIONS')
-                for p in attributes[panel_name]:
-                    render = True
-                    if 'visibility' in p:
-                        if 'variable' in p['visibility'] and p['visibility']['variable']:
-                            if p['visibility']['variable'] == 'active_bone':
-                                if 'object' in p['visibility']:
-                                    if p['visibility']['object'] and p['visibility']['object'] in bpy.data.objects:
-                                        if bpy.data.objects[p['visibility']['object']].type == "ARMATURE":
-                                            if p['visibility']['bone'] and p['visibility']['bone'] in bpy.data.objects[p['visibility']['object']].data.bones:
-                                                render = True if bpy.data.objects[p['visibility']['object']].data.bones.active.name == p['visibility']['bone'] else False
-                                                if render:
-                                                    render = bpy.data.objects[p['visibility']['object']].data.bones.active.select
-                                                if not p['visibility']['value']:
-                                                    render = not render
-                            else:
-                                if p['visibility']['data_path'] != "":
+                for g in attributes[panel_name]:
+                    group_box = box.box()
+                    header_row = group_box.row()
+                    expanded_op = header_row.operator(OPS_OT_ExpandAttributeGroup.bl_idname, emboss=False, text="",icon="TRIA_DOWN" if g["expanded"] else "TRIA_RIGHT" )
+                    expanded_op.panel_name = panel_name
+                    expanded_op.group_name = g["name"]
+                    header_row.label(text=g["name"].replace("_", " "))
+                    if g["expanded"]:
+                        for p in g["attributes"]:
+                            render = True
+                            if 'visibility' in p:
+                                if 'variable' in p['visibility'] and p['visibility']['variable']:
+                                    if p['visibility']['variable'] == 'active_bone':
+                                        if 'object' in p['visibility']:
+                                            if p['visibility']['object'] and p['visibility']['object'] in bpy.data.objects:
+                                                if bpy.data.objects[p['visibility']['object']].type == "ARMATURE":
+                                                    if p['visibility']['bone'] and p['visibility']['bone'] in bpy.data.objects[p['visibility']['object']].data.bones:
+                                                        render = True if bpy.data.objects[p['visibility']['object']].data.bones.active.name == p['visibility']['bone'] else False
+                                                        if render:
+                                                            render = bpy.data.objects[p['visibility']['object']].data.bones.active.select
+                                                        if not p['visibility']['value']:
+                                                            render = not render
+                                    else:
+                                        if p['visibility']['data_path'] != "":
+                                            try:
+                                                render = eval(p['visibility']['data_path']) == p['visibility']['value']
+                                            except:
+                                                continue
+                            if render:
+                                row = group_box.row(align=True)
+                                delimiter = '][' if '][' in p['path'] else '.'
+                                offset = 1 if '][' in p['path'] else 0
+                                prop = p['path'][p['path'].rindex(delimiter)+1:]
+                                path = p['path'][:p['path'].rindex(delimiter)+offset]
+                                if p['name']:
                                     try:
-                                        render = eval(p['visibility']['data_path']) == p['visibility']['value']
+                                        row.prop(eval(path), prop, text=p['name'])
                                     except:
-                                        continue
-                    if render:
-                        row = box.row(align=True)
-                        delimiter = '][' if '][' in p['path'] else '.'
-                        offset = 1 if '][' in p['path'] else 0
-                        prop = p['path'][p['path'].rindex(delimiter)+1:]
-                        path = p['path'][:p['path'].rindex(delimiter)+offset]
-                        if p['name']:
-                            try:
-                                row.prop(eval(path), prop, text=p['name'])
-                            except:
-                                print("couldn't render ", path, " prop")
-                        else:
-                            try:
-                                row.prop(eval(path), prop)
-                            except:
-                                print("couldn't render ", path, " prop")
+                                        print("couldn't render ", path, " prop")
+                                else:
+                                    try:
+                                        row.prop(eval(path), prop)
+                                    except:
+                                        print("couldn't render ", path, " prop")
 class Nextr_Rig(PropertyGroup):
     @classmethod
     def __init__(self):
@@ -545,7 +553,7 @@ class VIEW3D_PT_physics_panel(VIEW3D_PT_nextrRig):
 
 
 class VIEW3D_PT_rig_layers(VIEW3D_PT_nextrRig):
-    bl_label = "Rig Layers"
+    bl_label = "Rig"
     bl_idname = "VIEW3D_PT_rig_layers_"+character_name
 
     def draw(self, context):
@@ -632,6 +640,27 @@ class OPS_PT_BakePhysics(bpy.types.Operator):
                 self.report({'INFO'}, "Removed physics cache for: "+self.object_name)
         return {'FINISHED'}
 
+class OPS_OT_ExpandAttributeGroup(Operator):
+    "Expands or Contracts attribute group"
+    bl_idname = "nextr.expand_attribute_group"
+    bl_label = "Expand/Contract"
+    bl_description = "Expands or Contracts Attribute Group"
+
+    panel_name : StringProperty()
+    group_name : StringProperty()
+
+    def execute(self, context):
+        o = NextrRig_Utils.get_rig()
+        if o:
+            if attributes_name in o.data:
+                if self.panel_name in o.data[attributes_name]:
+                    for i in range(len(o.data[attributes_name][self.panel_name])):
+                        g = o.data[attributes_name][self.panel_name][i] 
+                        if g["name"] == self.group_name:
+                            g["expanded"] = not g["expanded"]
+                        o.data[attributes_name][self.panel_name][i] = g
+
+        return {'FINISHED'}
 classes = (
     VIEW3D_PT_outfits,
     VIEW3D_PT_rig_layers,
@@ -642,6 +671,7 @@ classes = (
     OPS_OT_HideModifier,
     OPS_OT_ToggleRigLayer,
     OPS_PT_BakePhysics,
+    OPS_OT_ExpandAttributeGroup,
     Nextr_Rig,
     Nextr_Rig_Object_Setting,
     Nextr_Rig_Rig_Layers
