@@ -10,6 +10,33 @@ bl_info = {
     "version": (1, 1, 1),
     "blender": (2, 92, 0)
 }
+class NextrRigDebug_Utils():
+    
+    def generate_rig_layers(self, context):
+        "generates UI rig layers for the UI"
+        o = get_edited_object(context)
+        o.data['nextrrig_rig_layers'] = {}
+        nextrrig_rig_layers = []
+        for i in range(31):
+            nextrrig_rig_layers.append([])
+
+        for i in range(31):
+            if 'nextr_rig_layers_visibility_'+str(i) in context.scene:
+                if context.scene['nextr_rig_layers_visibility_'+str(i)]:
+                    row = i
+                    if 'nextr_rig_layers_row_'+str(i) in context.scene:
+                        row = context.scene['nextr_rig_layers_row_'+str(i)] - 1
+                    
+                    name = "Layer "+str(i+1)
+                    if 'nextr_rig_layers_name_'+str(i) in context.scene:
+                        name = context.scene['nextr_rig_layers_name_'+str(i)]
+                    
+                    layer_index = i
+                    if 'nextr_rig_layers_index_'+str(i) in context.scene:
+                        layer_index = context.scene['nextr_rig_layers_index_'+str(i)]
+                    
+                    nextrrig_rig_layers[row].append({'name':name, 'index':int(layer_index)})
+        o.data['nextrrig_rig_layers']['nextrrig_rig_layers'] = nextrrig_rig_layers
 
 def get_rig(name):
     if name in bpy.data.objects:
@@ -116,7 +143,6 @@ class VIEW3D_PT_nextr_rig_debug_rig_layers(Panel):
         layout = self.layout
         box = layout.box()
         box.label(text="Rig Layers")
-        box.operator('nextr_debug.generate_rig_layers')
         for i in range(31):
             icon = "HIDE_OFF"
             if 'nextr_rig_layers_visibility_'+str(i) in context.scene:
@@ -125,19 +151,12 @@ class VIEW3D_PT_nextr_rig_debug_rig_layers(Panel):
             name = "Layer "+str(i+1)
             if 'nextr_rig_layers_name_'+str(i) in context.scene:
                 name = context.scene['nextr_rig_layers_name_'+str(i)]
-            row_box = row.box()
-            row_box.label(text=name)
-            row_box_row_name = row_box.row(align=True)
-            row_box_row_name.prop(context.scene, 'nextr_rig_layers_visibility_'+str(i), icon=icon)
-            row_box_row_name.prop(context.scene, 'nextr_rig_layers_name_'+str(i))
-            row_box.label(text="Index of the rig layer")
-            row_box_row_layers = row_box.row(align=True)
-            row_box_row_layers.prop(context.scene, 'nextr_rig_layers_index_'+str(i))
-            row_box.label(text="Row in the UI")
-            row_box_row_row = row_box.row(align=True)
-            row_box_row_row.prop(context.scene, 'nextr_rig_layers_row_'+str(i))
+            row.column(align=True, heading=name)
+            row.column(align=True).prop(context.scene, 'nextr_rig_layers_visibility_'+str(i), icon=icon)
+            row.column(align=True).prop(context.scene, 'nextr_rig_layers_name_'+str(i))
+            row.column(align=True).prop(context.scene, 'nextr_rig_layers_index_'+str(i), text="Rig Layer index")
+            row.column(align=True).prop(context.scene, 'nextr_rig_layers_row_'+str(i), text="Rig Layer UI row")
 
-        box.operator('nextr_debug.generate_rig_layers')
 class VIEW3D_PT_nextr_rig_debug_attributes(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -188,7 +207,7 @@ class OPS_OT_EnableNextrRig(Operator):
 class OPS_OT_AddCollection(Operator):
     bl_idname = 'nextr_debug.add_collection'
     bl_label = 'Adds collection'
-    bl_description = 'Adds collection to another colection'
+    bl_description = 'Adds collection to another collection'
 
     collection_name: StringProperty()
     collection_parent_name: StringProperty()
@@ -211,7 +230,7 @@ class OPS_OT_Empty(Operator):
 class OPS_OT_AddAttribute(Operator):
     bl_idname = 'nextr_debug.add_attribute'
     bl_label = 'Text'
-    bl_description = 'Adds the attribute to the UI or synces it to another attribute'
+    bl_description = 'Adds the attribute to the UI or syncs it to another attribute'
     
     panel_name : StringProperty()
     parent_path :  StringProperty()
@@ -279,40 +298,6 @@ class OPS_OT_PinActiveObject(Operator):
                 self.report({'INFO'}, "Pinned "+context.active_object.name)
         return {'FINISHED'}
 
-class OPS_OT_GenerateRigLayers(Operator):
-    bl_idname = 'nextr_debug.generate_rig_layers'
-    bl_label = 'Generate rig layers'
-    bl_description = 'Generates rig layers for the selected object'
-
-    def execute(self, context):
-        if context.active_object:
-            o = get_edited_object(context)
-            o.data['nextrrig_rig_layers'] = {}
-            nextrrig_rig_layers = []
-            for i in range(31):
-                nextrrig_rig_layers.append([])
-
-            for i in range(31):
-                if 'nextr_rig_layers_visibility_'+str(i) in context.scene:
-                    if context.scene['nextr_rig_layers_visibility_'+str(i)]:
-                        row = i
-                        if 'nextr_rig_layers_row_'+str(i) in context.scene:
-                            row = context.scene['nextr_rig_layers_row_'+str(i)] - 1
-                        
-                        name = "Layer "+str(i+1)
-                        if 'nextr_rig_layers_name_'+str(i) in context.scene:
-                            name = context.scene['nextr_rig_layers_name_'+str(i)]
-                        
-                        layer_index = i
-                        if 'nextr_rig_layers_index_'+str(i) in context.scene:
-                            layer_index = context.scene['nextr_rig_layers_index_'+str(i)]
-                        
-                        nextrrig_rig_layers[row].append({'name':name, 'index':int(layer_index)})
-            o.data['nextrrig_rig_layers']['nextrrig_rig_layers'] = nextrrig_rig_layers
-            self.report({'INFO'}, "Added rig layers to "+o.name)
-        else:
-            self.report({'ERROR'}, "No active object!")
-        return {'FINISHED'}
 class OPS_OT_EditAttribute(Operator):
     bl_idname = 'nextr_debug.edit_attribute'
     bl_label = 'Edit attribute'
@@ -667,7 +652,6 @@ OPS_OT_Empty,
 OPS_OT_EnableNextrRig,
 OPS_OT_AddCollection,
 VIEW3D_PT_nextr_rig_debug_rig_layers,
-OPS_OT_GenerateRigLayers,
 OPS_OT_AddAttribute,
 WM_MT_button_context,
 VIEW3D_PT_nextr_rig_debug_attributes,
@@ -686,10 +670,10 @@ def setup_custom_keys():
 
 def setup_rig_layers():
     for i in range(31):
-        setattr(bpy.types.Scene, 'nextr_rig_layers_visibility_'+str(i), ui_setup_toggle(None, "","If layers is visible in the UI",False))
-        setattr(bpy.types.Scene, 'nextr_rig_layers_name_'+str(i), ui_setup_string(None, "","Name of the layer in the UI","Layer "+str(i+1)))
-        setattr(bpy.types.Scene, 'nextr_rig_layers_row_'+str(i), ui_setup_int(None, "","On which row is the layer going to be in the UI",i,1,32))
-        setattr(bpy.types.Scene, 'nextr_rig_layers_index_'+str(i), ui_setup_int(None, "","Which rig layers is going to be affected by this toggle",i,0,31))
+        setattr(bpy.types.Scene, 'nextr_rig_layers_visibility_'+str(i), ui_setup_toggle(NextrRigDebug_Utils.generate_rig_layers, "","If layers is visible in the UI",False))
+        setattr(bpy.types.Scene, 'nextr_rig_layers_name_'+str(i), ui_setup_string(NextrRigDebug_Utils.generate_rig_layers, "","Name of the layer in the UI","Layer "+str(i+1)))
+        setattr(bpy.types.Scene, 'nextr_rig_layers_row_'+str(i), ui_setup_int(NextrRigDebug_Utils.generate_rig_layers, "","On which row is the layer going to be in the UI",i+1,1,32))
+        setattr(bpy.types.Scene, 'nextr_rig_layers_index_'+str(i), ui_setup_int(NextrRigDebug_Utils.generate_rig_layers, "","Which rig layers is going to be affected by this toggle",i,0,31))
 
 def register():
     setup_custom_keys()
