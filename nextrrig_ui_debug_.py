@@ -5,10 +5,10 @@ import bpy
 
 bl_info = {
     "name": "Nextr Rig UI Debugger",
-    "description": "Script helps you to create menus just by clicking",
+    "description": "Create very simple but functional menus for your rigs",
     "author": "Nextr3D",
-    "version": (1, 1, 1),
-    "blender": (2, 92, 0)
+    "version": (1, 2, 0),
+    "blender": (2, 93, 1)
 }
 class NextrRigDebug_Utils():
     
@@ -327,6 +327,7 @@ class OPS_OT_EditAttribute(Operator):
     
     path : StringProperty(name="Path", description="RNA path of the attribute")
     panel_name : StringProperty()
+    group_name : StringProperty()
     panels : EnumProperty(name="Panel", items=[('outfits','Outfits','Outfits panel',0),('body','Body','Body Panel',1),('rig','Rig Layers','Rig Layers Panel',2)])
     name : StringProperty(default='Default Value', name="Attribute's Name")
     attribute : {}
@@ -338,7 +339,7 @@ class OPS_OT_EditAttribute(Operator):
 
     def execute(self, context):
         o = get_edited_object(context)
-        a = get_attribute_by_path(context,self.panel_name, self.path)
+        a = get_attribute_by_path(context,self.panel_name,self.group_name, self.path)
         
         if a:
             a['visibility'] = {}
@@ -361,31 +362,33 @@ class OPS_OT_EditAttribute(Operator):
             
             new_attributes = []
             attributes_key = context.scene['nextr_rig_attributes_key']
-            for attribute in o.data[attributes_key][self.panel_name]:
-                if attribute['path'] == self.path:
-                    if self.panels == self.panel_name:
-                        new_attributes.append(a)
-                    else:
-                        different_panel_attributes = []
-                        if self.panels in o.data[attributes_key]:
-                            try:
-                                different_panel_attributes = o.data[attributes_key][self.panels].to_list()
-                                different_panel_attributes.append(a)
-                            except:
-                                different_panel_attributes = o.data[attributes_key][self.panels]
-                                different_panel_attributes.append(a)    
+            for g in o.data[attributes_key][self.panel_name]:
+                if g["name"] == self.group_name:
+                    for attribute in g["attributes"]:
+                        if attribute['path'] == self.path:
+                            if self.panels == self.panel_name:
+                                new_attributes.append(a)
+                            else:
+                                different_panel_attributes = []
+                                if self.panels in o.data[attributes_key]:
+                                    try:
+                                        different_panel_attributes = o.data[attributes_key][self.panels].to_list()
+                                        different_panel_attributes.append(a)
+                                    except:
+                                        different_panel_attributes = o.data[attributes_key][self.panels]
+                                        different_panel_attributes.append(a)    
+                                else:
+                                    different_panel_attributes.append(a)
+                                o.data[attributes_key][self.panels] = different_panel_attributes
                         else:
-                            different_panel_attributes.append(a)
-                        o.data[attributes_key][self.panels] = different_panel_attributes
-                else:
-                    new_attributes.append(attribute)
-            o.data[attributes_key][self.panel_name] = new_attributes
+                            new_attributes.append(attribute)
+                    g["attributes"] = new_attributes
         
-        self.report({'INFO'}, "Successfully updated attribute")
+        self.report({'INFO'}, "Updated attribute")
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        self.attribute = get_attribute_by_path(context, self.panel_name, self.path)        
+        self.attribute = get_attribute_by_path(context, self.panel_name, self.group_name, self.path)        
         if not self.attribute:
             return {"CANCELED"}
         if 'visibility' in self.attribute:
@@ -415,8 +418,8 @@ class OPS_OT_EditAttribute(Operator):
          
         box.label(text=self.name, icon="PREFERENCES")
         box.prop(self, "name", emboss=True)
-        box.prop(self, "path", text="Path", icon="RNA")
-        box.prop(self, 'panels')
+        box.prop(self, "path", text="Path", icon="RNA", emboss=False)
+        # box.prop(self, 'panels') #TODO: add support for transfering attributes between panels and groups
         box_visibility = box.box()
         box_visibility.label(text="Visibility")
         box_visibility.prop(self, "variable_type")
@@ -479,6 +482,7 @@ class OPS_OT_RemoveAttribute(Operator):
     bl_description = "Removes attribute from the UI and other synced attributes too"
     path : StringProperty()
     panel_name : StringProperty()
+    group_name : StringProperty()
 
     def invoke(self, context, event):
         return context.window_manager.invoke_confirm(self,event)
@@ -489,13 +493,15 @@ class OPS_OT_RemoveAttribute(Operator):
             attributes_key = context.scene['nextr_rig_attributes_key']
             if attributes_key in o.data:
                 if self.panel_name in o.data[attributes_key]:
-                    att = o.data[attributes_key][self.panel_name]
-                    new_att = []
-                    for a in att:
-                        if a['path'] != self.path:
-                            new_att.append(a)
-                    o.data[attributes_key][self.panel_name] = new_att
-                    self.report({"INFO"}, 'Removed property')
+                    for g in o.data[attributes_key][self.panel_name]:
+                        if g["name"] == self.group_name:
+                            att = g["attributes"]
+                            new_att = []
+                            for a in att:
+                                if a['path'] != self.path:
+                                    new_att.append(a)
+                            g["attributes"] = new_att
+                            self.report({"INFO"}, 'Removed property')
         return {'FINISHED'}
 class OPS_OT_AttributeChangePosition(Operator):
     bl_idname = 'nextr_debug.attribute_change_position'
@@ -504,29 +510,32 @@ class OPS_OT_AttributeChangePosition(Operator):
     path : StringProperty()
     panel_name : StringProperty()
     direction : BoolProperty() #True moves up, False move down
-    
+    group_name : StringProperty()
+
     def execute(self, context):
         if context.active_object:
             o = get_edited_object(context)
             attributes_key = context.scene['nextr_rig_attributes_key']
             if attributes_key in o.data:
                 if self.panel_name in o.data[attributes_key]:
-                    att = o.data[attributes_key][self.panel_name]
-                    i = 0
-                    for a in enumerate(att):
-                        if a[1]['path'] == self.path:
-                            i = a[0]
-                    if self.direction and i-1 >= 0: #move attribute up in the list
-                        prev = att[i-1]
-                        att[i-1] = att[i]
-                        att[i] = prev
-                        self.report({'INFO'}, "Moved attribute up in the list")
-                    elif not self.direction and i+1 < len(att):
-                        next = att[i+1]
-                        att[i+1] = att[i]
-                        att[i] = next
-                        self.report({'INFO'}, "Moved attribute down in the list")
-                    o.data[attributes_key][self.panel_name] = att
+                    for g in o.data[attributes_key][self.panel_name]:
+                        if g["name"] == self.group_name:
+                            att = g["attributes"]
+                            i = 0
+                            for a in enumerate(att):
+                                if a[1]['path'] == self.path:
+                                    i = a[0]
+                            if self.direction and i-1 >= 0: #move attribute up in the list
+                                prev = att[i-1]
+                                att[i-1] = att[i]
+                                att[i] = prev
+                                self.report({'INFO'}, "Moved attribute up in the list")
+                            elif not self.direction and i+1 < len(att):
+                                next = att[i+1]
+                                att[i+1] = att[i]
+                                att[i] = next
+                                self.report({'INFO'}, "Moved attribute down in the list")
+                            g["attributes"] = att
         return {'FINISHED'}
 class OPS_OT_AddAttributeGroup(Operator):
     "adds new group to the selected panel"
@@ -661,7 +670,7 @@ class OPS_OT_AttributeGroupChangePosition(Operator):
                     for a in enumerate(att):
                         if a[1]['name'] == self.group_name:
                             i = a[0]
-                    if self.direction and i-1 >= 0: #move attribute up in the list
+                    if self.direction and i-1 >= 0: #move attribute group up in the list
                         prev = att[i-1]
                         att[i-1] = att[i]
                         att[i] = prev
@@ -800,20 +809,24 @@ def render_attributes(element, panel_name, attributes):
                         op_edit = row.operator(OPS_OT_EditAttribute.bl_idname, icon="PREFERENCES", text="")
                         op_edit.path = p['path']
                         op_edit.panel_name = panel_name
+                        op_edit.group_name = g["name"]
 
                         op_up = row.operator(OPS_OT_AttributeChangePosition.bl_idname, icon="TRIA_UP", text="")
                         op_up.direction = True
                         op_up.path = p['path']
                         op_up.panel_name = panel_name
-
+                        op_up.group_name = g["name"]
+                        
                         op_down = row.operator(OPS_OT_AttributeChangePosition.bl_idname, icon="TRIA_DOWN", text="")
                         op_down.direction = False
                         op_down.path = p['path']
                         op_down.panel_name = panel_name
+                        op_down.group_name = g["name"]
 
                         op = row.operator(OPS_OT_RemoveAttribute.bl_idname, icon="TRASH", text="")
                         op.path = p['path']
                         op.panel_name = panel_name
+                        op.group_name = g["name"]
          
 
 def render_attributes_in_menu(layout, context, panel):
@@ -856,15 +869,17 @@ def sync_attribute_to_parent(attributes, parent_path, path):
                 attributes[i]['synced'] = syn
     return attributes
 
-def get_attribute_by_path(context, panel_name, path):
+def get_attribute_by_path(context, panel_name, group_name, path):
     if context.active_object:
         o = get_edited_object(context)
         attributes_key = context.scene['nextr_rig_attributes_key']
         if attributes_key in o.data:
             if panel_name in o.data[attributes_key]:
-                for a in o.data[attributes_key][panel_name]:
-                    if path == a['path']:
-                        return a
+                for g in o.data[attributes_key][panel_name]:
+                    if g["name"] == group_name:
+                        for a in g["attributes"]:
+                            if path == a['path']:
+                                return a
     return False
 
 classes = (VIEW3D_PT_nextr_rig_debug,
