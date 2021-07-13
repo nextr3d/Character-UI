@@ -614,7 +614,65 @@ class OPS_OT_EditAttributeGroup(Operator):
         else:
             self.report({'ERROR'}, "No active object.")
             return {'CANCELLED'}
-            
+class OPS_OT_RemoveAttributeGroup(Operator):
+    "Removes attribute group from the UI"
+    bl_idname = 'nextr_debug.remove_attribute_group'
+    bl_label = 'Remove attribute group from the UI'
+    bl_description = "Removes attribute group from the UI and all of the attributes inside and other synced attributes too"
+
+    group_name : StringProperty()
+    panel_name : StringProperty()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self,event)
+
+    def execute(self, context):
+        if context.active_object:
+            o = get_edited_object(context)
+            attributes_key = context.scene['nextr_rig_attributes_key']
+            if attributes_key in o.data:
+                if self.panel_name in o.data[attributes_key]:
+                    att = o.data[attributes_key][self.panel_name]
+                    new_groups = []
+                    for g in att:
+                        if g["name"] != self.group_name:
+                            new_groups.append(g)
+                    o.data[attributes_key][self.panel_name] = new_groups
+                    self.report({"INFO"}, 'Removed Attribute Group')
+        return {'FINISHED'}  
+
+class OPS_OT_AttributeGroupChangePosition(Operator):
+    bl_idname = 'nextr_debug.attribute_group_change_position'
+    bl_label = "Change attribute group's position in the list"
+    bl_description = "Changes position of the attribute group in the current list"
+
+    group_name : StringProperty()
+    panel_name : StringProperty()
+    direction : BoolProperty() #True moves up, False move down
+    
+    def execute(self, context):
+        if context.active_object:
+            o = get_edited_object(context)
+            attributes_key = context.scene['nextr_rig_attributes_key']
+            if attributes_key in o.data:
+                if self.panel_name in o.data[attributes_key]:
+                    att = o.data[attributes_key][self.panel_name]
+                    i = 0
+                    for a in enumerate(att):
+                        if a[1]['name'] == self.group_name:
+                            i = a[0]
+                    if self.direction and i-1 >= 0: #move attribute up in the list
+                        prev = att[i-1]
+                        att[i-1] = att[i]
+                        att[i] = prev
+                        self.report({'INFO'}, "Moved attribute group up in the list")
+                    elif not self.direction and i+1 < len(att):
+                        next = att[i+1]
+                        att[i+1] = att[i]
+                        att[i] = next
+                        self.report({'INFO'}, "Moved attribute group down in the list")
+                    o.data[attributes_key][self.panel_name] = att
+        return {'FINISHED'}
 class WM_MT_button_context(Menu):
     bl_label = "Add to UI"
 
@@ -700,9 +758,28 @@ def render_attributes(element, panel_name, attributes):
                 expand_op.panel_name = panel_name
                 expand_op.group_name = g["name"]
                 header_row.label(text=g["name"].replace("_", " "))
+                #edit group operator
                 edit_op = header_row.operator(OPS_OT_EditAttributeGroup.bl_idname, text="", icon="PREFERENCES")
                 edit_op.panel_name = panel_name
                 edit_op.group_name = g["name"]
+                #edit group operator
+                #move up group operator
+                move_up_op = header_row.operator(OPS_OT_AttributeGroupChangePosition.bl_idname, text="", icon="TRIA_UP")
+                move_up_op.panel_name = panel_name
+                move_up_op.group_name = g["name"]
+                move_up_op.direction = True
+                #move up group operator
+                #move down group operator
+                move_up_op = header_row.operator(OPS_OT_AttributeGroupChangePosition.bl_idname, text="", icon="TRIA_DOWN")
+                move_up_op.panel_name = panel_name
+                move_up_op.group_name = g["name"]
+                move_up_op.direction = False
+                #move down group operator
+                #delete group operator
+                delete_op = header_row.operator(OPS_OT_RemoveAttributeGroup.bl_idname, text="", icon="TRASH")
+                delete_op.panel_name = panel_name
+                delete_op.group_name = g["name"]
+                #delete group operator
                 if g["expanded"]:
                     for p in g['attributes']:
                         row = box.row(align=True)
@@ -813,7 +890,9 @@ OPS_OT_RemoveSyncedAttribute,
 OPS_OT_AttributeChangePosition,
 OPS_OT_AddAttributeGroup,
 OPS_OT_ExpandAttributeGroup,
-OPS_OT_EditAttributeGroup)
+OPS_OT_EditAttributeGroup,
+OPS_OT_RemoveAttributeGroup,
+OPS_OT_AttributeGroupChangePosition)
 def setup_custom_keys():
     setattr(bpy.types.Scene, 'nextr_rig_properties_key', ui_setup_string(None, "Custom name for the properties key", "if you in the ui script changed what the key's value is", get_edited_object(bpy.context).name+'_properties'))
     setattr(bpy.types.Scene, 'nextr_rig_attributes_key', ui_setup_string(None, "Custom name for the attributes key", "if you in the ui script changed what the key's value is", get_edited_object(bpy.context).name+'_attributes'))
