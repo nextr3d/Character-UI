@@ -574,7 +574,47 @@ class OPS_OT_ExpandAttributeGroup(Operator):
                         o.data[attributes_key][self.panel_name][i] = g
 
         return {'FINISHED'}
+class OPS_OT_EditAttributeGroup(Operator):
+    "Edits settings of attribute groups"
+    bl_idname = "nextr_debug.edit_attribute_group"
+    bl_label = "Edit attribute group"
+    bl_description = "Edit attribute group"
 
+    group_name : StringProperty()
+    panel_name : StringProperty()
+    new_group_name : StringProperty(name="Group Name")
+
+    def invoke(self, context, event):
+        self.new_group_name = self.group_name.replace("_", " ")
+        return context.window_manager.invoke_props_dialog(self, width=350)
+
+    def draw(self, context):
+        self.layout.prop(self, "new_group_name")
+
+    def execute(self, context):
+        print(self.group_name, " ",self.panel_name, " ", self.new_group_name)
+        if self.group_name == self.new_group_name.replace(" ","_"):
+            self.report({'INFO'}, "No changes saved")
+            return {'FINISHED'}
+        if context.active_object:
+            o = get_edited_object(context)
+            attributes_key = context.scene['nextr_rig_attributes_key']
+            if attributes_key in o.data:
+                if self.panel_name in o.data[attributes_key]:
+                    index = -1
+                    for i in range(len(o.data[attributes_key][self.panel_name])):
+                        if o.data[attributes_key][self.panel_name][i]["name"] == self.new_group_name.replace(" ","_"):
+                            self.report({'INFO'}, "No changes saved, duplicated name for one panel")
+                            return {'CANCELLED'}
+                        if o.data[attributes_key][self.panel_name][i]["name"] == self.group_name:
+                            index = i
+                    o.data[attributes_key][self.panel_name][index]["name"] = self.new_group_name.replace(" ","_")
+                    self.report({'INFO'}, "Updated Attribute Group name")
+            return {'FINISHED'}
+        else:
+            self.report({'ERROR'}, "No active object.")
+            return {'CANCELLED'}
+            
 class WM_MT_button_context(Menu):
     bl_label = "Add to UI"
 
@@ -660,6 +700,9 @@ def render_attributes(element, panel_name, attributes):
                 expand_op.panel_name = panel_name
                 expand_op.group_name = g["name"]
                 header_row.label(text=g["name"].replace("_", " "))
+                edit_op = header_row.operator(OPS_OT_EditAttributeGroup.bl_idname, text="", icon="PREFERENCES")
+                edit_op.panel_name = panel_name
+                edit_op.group_name = g["name"]
                 if g["expanded"]:
                     for p in g['attributes']:
                         row = box.row(align=True)
@@ -769,7 +812,8 @@ OPS_OT_EditAttribute,
 OPS_OT_RemoveSyncedAttribute,
 OPS_OT_AttributeChangePosition,
 OPS_OT_AddAttributeGroup,
-OPS_OT_ExpandAttributeGroup)
+OPS_OT_ExpandAttributeGroup,
+OPS_OT_EditAttributeGroup)
 def setup_custom_keys():
     setattr(bpy.types.Scene, 'nextr_rig_properties_key', ui_setup_string(None, "Custom name for the properties key", "if you in the ui script changed what the key's value is", get_edited_object(bpy.context).name+'_properties'))
     setattr(bpy.types.Scene, 'nextr_rig_attributes_key', ui_setup_string(None, "Custom name for the attributes key", "if you in the ui script changed what the key's value is", get_edited_object(bpy.context).name+'_attributes'))
