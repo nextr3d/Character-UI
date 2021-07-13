@@ -328,6 +328,7 @@ class OPS_OT_EditAttribute(Operator):
     variable_type : EnumProperty(name="Drive Visibility By", items=[('active_bone','Active Bone','Attribute depends on certain object',0),('data_path','Data Path','Attribute depends on certain the data path value ',1)])
     bone_pointer : StringProperty(name="Bone")
     visible_pointer : BoolProperty(name="Visible", default=True)
+    data_path_block_pointer : StringProperty(name="Prop")
 
     def execute(self, context):
         o = get_edited_object(context)
@@ -405,7 +406,6 @@ class OPS_OT_EditAttribute(Operator):
 
     def draw(self, context):
         box = self.layout.box()
-         
         box.label(text=self.name, icon="PREFERENCES")
         box.prop(self, "name", emboss=True)
         box.prop(self, "path", text="Path", icon="RNA")
@@ -421,6 +421,8 @@ class OPS_OT_EditAttribute(Operator):
                     box_visibility.prop_search(self, 'bone_pointer', context.scene.nextr_rig_object_pointer.data, 'bones')
             box_visibility.prop(self, "visible_pointer", icon="RESTRICT_VIEW_OFF" if self.visible_pointer else "RESTRICT_VIEW_ON", text="Show when selected" if self.visible_pointer else "Show when NOT selected")
         elif self.variable_type == 'data_path':
+            box_visibility.prop(context.scene, 'nextr_rig_visibility_prop_type')
+            box_visibility.prop_search(self, 'data_path_block_pointer', bpy.data, get_types()[context.scene['nextr_rig_visibility_prop_type']].lower()+"s")#TODO:this needs to be rewritten to look better but I'll leave it like this for
             box_visibility.prop(self, "visibility_data_path")
             box_visibility.prop(self, 'visibility_value')
         if 'synced' in self.attribute:
@@ -689,10 +691,21 @@ def setup_rig_layers():
         setattr(bpy.types.Scene, 'nextr_rig_layers_name_'+str(i), ui_setup_string(None, "","Name of the layer in the UI","Layer "+str(i+1)))
         setattr(bpy.types.Scene, 'nextr_rig_layers_row_'+str(i), ui_setup_int(None, "","On which row is the layer going to be in the UI",i,1,32))
         setattr(bpy.types.Scene, 'nextr_rig_layers_index_'+str(i), ui_setup_int(None, "","Which rig layers is going to be affected by this toggle",i,0,31))
-
+def ui_setup_enum_options(array, description_prefix,icons):
+    options = []
+    for i in range(len(array)):
+        options.append(("OP"+str(i), array[i], description_prefix+": "+ array[i], icons[i],i))
+    return options
+def get_types():
+    return ["ACTION", "ARMATURE", "BRUSH", "CAMERA", "CACHEFILE", "CURVE", "FONT", "GREASEPENCIL", "COLLECTION", "IMAGE", "KEY", "LIGHT", "LIBRARY", "LINESTYLE", "LATTICE", "MASK", "MATERIAL", "META", "MESH", "MOVIECLIP", "NODETREE", "OBJECT", "PAINTCURVE", "PALETTE", "PARTICLE", "LIGHT_PROBE", "SCENE", "SIMULATION", "SOUND", "SPEAKER", "TEXT", "TEXTURE", "HAIR", "POINTCLOUD", "VOLUME", "WINDOWMANAGER", "WORLD", "WORKSPACE"]
+     
+def setup_visibility_driver_prop():
+    icons = ["ACTION", "ARMATURE_DATA", "BRUSH_DATA", "CAMERA_DATA", "FILE_CACHE", "CURVE_DATA", "FONT_DATA", "GREASEPENCIL", "OUTLINER_COLLECTION", "IMAGE", "SHAPEKEY_DATA", "LIGHT", "LIBRARY_DATA_DIRECT", "LINE_DATA", "LATTICE_DATA", "MOD_MASK", "MATERIAL", "META_DATA", "MESH_DATA", "TRACKER", "NODETREE", "OBJECT_DATA", "CURVE_BEZCURVE", "COLOR", "PARTICLE_DATA", "OUTLINER_OB_LIGHTPROBE", "SCENE", "PHYSICS", "SOUND", "SPEAKER", "TEXT", "TEXTURE", "HAIR", "POINTCLOUD_DATA", "VOLUME_DATA", "WINDOW", "WORLD", "WORKSPACE"]
+    setattr(bpy.types.Scene, 'nextr_rig_visibility_prop_type', ui_setup_enum(None,"","Type of ID-Block which will  be used", ui_setup_enum_options(get_types(), "Data ID-Block which will be used", icons)))
 def register():
     setup_custom_keys()
     setup_rig_layers()
+    setup_visibility_driver_prop()
     for c in classes:
         register_class(c)
     bpy.types.WM_MT_button_context.append(render_copy_data_path)
