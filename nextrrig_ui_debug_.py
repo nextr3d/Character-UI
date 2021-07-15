@@ -349,7 +349,11 @@ class OPS_OT_EditAttribute(Operator):
                             a['visibility']['bone'] = self.bone_pointer
                         a['visibility']['value'] = self.visible_pointer
             else:
-                prop_type = get_types()[context.scene['nextr_rig_visibility_prop_type']].lower()
+                prop_type = "objects"
+                try:
+                    prop_type = get_types()[context.scene['nextr_rig_visibility_prop_type']].lower()
+                except:
+                    pass
                 new_data_path = 'bpy.data.'+prop_type+'["'+self.data_path_block_pointer+'"].'+self.visibility_data_path
                 try: 
                     valid_path = eval(new_data_path) 
@@ -445,7 +449,11 @@ class OPS_OT_EditAttribute(Operator):
         elif self.variable_type == 'data_path':
             visibility_row = box_visibility.row(align=True)
             visibility_row.prop(context.scene, 'nextr_rig_visibility_prop_type', icon_only=True)
-            prop_type = get_types()[context.scene['nextr_rig_visibility_prop_type']].lower()
+            prop_type = "objects"
+            try:
+                prop_type = get_types()[context.scene['nextr_rig_visibility_prop_type']].lower()
+            except:
+                pass
             visibility_row.prop_search(self, 'data_path_block_pointer', bpy.data, prop_type, text="")
             valid_path = True
             try: 
@@ -740,7 +748,7 @@ def get_types():
 def setup_visibility_driver_prop():
     "set ups enum used to determine ID-Blocks type with icons"
     icons = ["ACTION", "ARMATURE_DATA", "BRUSH_DATA", "CAMERA_DATA", "FILE_CACHE", "CURVE_DATA", "FONT_DATA", "GREASEPENCIL", "OUTLINER_COLLECTION", "IMAGE_DATA", "SHAPEKEY_DATA", "LIGHT", "LIBRARY_DATA_DIRECT", "LINE_DATA", "LATTICE_DATA", "MOD_MASK", "MATERIAL", "META_DATA", "MESH_DATA", "TRACKER", "NODETREE", "OBJECT_DATA", "CURVE_BEZCURVE", "COLOR", "PARTICLE_DATA", "OUTLINER_OB_LIGHTPROBE", "SCENE", "SOUND", "SPEAKER", "TEXT", "TEXTURE", "HAIR", "POINTCLOUD_DATA", "VOLUME_DATA", "WINDOW", "WORLD", "WORKSPACE"]
-    setattr(bpy.types.Scene, 'nextr_rig_visibility_prop_type', ui_setup_enum(None,"","Type of ID-Block which will  be used", ui_setup_enum_options(get_types(), "Data ID-Block which will be used", icons)))
+    setattr(bpy.types.Scene, 'nextr_rig_visibility_prop_type', ui_setup_enum(None,"","Type of ID-Block which will  be used", ui_setup_enum_options(get_types(), "Data ID-Block which will be used", icons),21))
 
 def register():
     setup_custom_keys()
