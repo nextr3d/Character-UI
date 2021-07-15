@@ -313,6 +313,7 @@ class OPS_OT_GenerateRigLayers(Operator):
         else:
             self.report({'ERROR'}, "No active object!")
         return {'FINISHED'}
+
 class OPS_OT_EditAttribute(Operator):
     bl_idname = 'nextr_debug.edit_attribute'
     bl_label = 'Edit attribute'
@@ -323,12 +324,13 @@ class OPS_OT_EditAttribute(Operator):
     panels : EnumProperty(name="Panel", items=[('outfits','Outfits','Outfits panel',0),('body','Body','Body Panel',1),('rig','Rig Layers','Rig Layers Panel',2)])
     name : StringProperty(default='Default Value', name="Attribute's Name")
     attribute : {}
-    visibility_value: IntProperty(name="Visibility Value", description="On which value of the variable show the attribute in the UI")
-    visibility_data_path : StringProperty(name='Data Path', description="Data path to the value you want to use as a driver for the visibility, use the whole data path!")
+    visibility_data_path_expression: StringProperty(name="Expression", description="Expression used for data path evaluation. For example \"==2\" will show the attribute only when the data from the data path equal to 2")
+    visibility_data_path : StringProperty(name='Data Path', description="Data path to the value you want to use as a driver for the visibility")
     variable_type : EnumProperty(name="Drive Visibility By", items=[('active_bone','Active Bone','Attribute depends on certain object',0),('data_path','Data Path','Attribute depends on certain the data path value ',1)])
     bone_pointer : StringProperty(name="Bone")
     visible_pointer : BoolProperty(name="Visible", default=True)
-
+    data_path_block_pointer : StringProperty(name="Prop")
+    
     def execute(self, context):
         o = get_edited_object(context)
         a = get_attribute_by_path(context,self.panel_name, self.path)
@@ -347,8 +349,19 @@ class OPS_OT_EditAttribute(Operator):
                             a['visibility']['bone'] = self.bone_pointer
                         a['visibility']['value'] = self.visible_pointer
             else:
-                a['visibility']['data_path'] = self.visibility_data_path
-                a['visibility']['value'] = self.visibility_value
+                prop_type = "objects"
+                try:
+                    prop_type = get_types()[context.scene['nextr_rig_visibility_prop_type']].lower()
+                except:
+                    pass
+                new_data_path = 'bpy.data.'+prop_type+'["'+self.data_path_block_pointer+'"].'+self.visibility_data_path
+                try: 
+                    valid_path = eval(new_data_path) 
+                except:
+                   self.report({'ERROR'}, "Invalid Data Path!")
+                   return {'CANCELLED'}
+                a['visibility']['data_path'] = new_data_path
+                a['visibility']['expression'] = self.visibility_data_path_expression
             a['name'] = self.name
             a['path'] = self.path
             
@@ -378,7 +391,8 @@ class OPS_OT_EditAttribute(Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        self.attribute = get_attribute_by_path(context, self.panel_name, self.path)        
+        self.attribute = get_attribute_by_path(context, self.panel_name, self.path)   
+        self.variable_type = "active_bone"     
         if not self.attribute:
             return {"CANCELED"}
         if 'visibility' in self.attribute:
@@ -388,16 +402,29 @@ class OPS_OT_EditAttribute(Operator):
                     self.bone_pointer = self.attribute['visibility']['bone']
                     context.scene.nextr_rig_object_pointer = bpy.data.objects[self.attribute['visibility']['object']]
                 except:
-                    print("No prev values")
+                    pass
             else:
+                self.variable_type = "data_path"
+                def get_data_from_string_data_path(context, data_path):
+                    "sets all of the values to the correct value from the data path in string format"
+                    data_path = data_path[9:]
+                    prop_type = data_path[:data_path.find("[")]
+                    prop_name = data_path[len(prop_type)+2:data_path.find('"]')]
+                    data_path = data_path[len(prop_type+'["'+prop_name+'"].'):]
+                    context.scene.nextr_rig_visibility_prop_type = "OP"+str(get_types().index(prop_type.upper()))
+                    self.data_path_block_pointer = prop_name
+                    self.visibility_data_path = data_path
+                    
                 try:
-                    self.visibility_data_path = self.attribute['visibility']['data_path']
-                    self.visibility_value = self.attribute['visibility']['value']
+                    get_data_from_string_data_path(context,self.attribute['visibility']['data_path'])
+                    self.visibility_data_path_expression = self.attribute['visibility']['expression']
                 except:
-                    print("No prev values")
+                    pass
         else:
-            self.visibility_value = 0
+            self.visibility_data_path_expression = ""
             self.visibility_data_path = ""
+            self.bone_pointer = ""
+            context.scene.nextr_rig_object_pointer = None
         self.panels = self.panel_name
         self.name = self.attribute['name'] if self.attribute['name'] else "Default Value" 
 
@@ -405,7 +432,6 @@ class OPS_OT_EditAttribute(Operator):
 
     def draw(self, context):
         box = self.layout.box()
-         
         box.label(text=self.name, icon="PREFERENCES")
         box.prop(self, "name", emboss=True)
         box.prop(self, "path", text="Path", icon="RNA")
@@ -421,8 +447,21 @@ class OPS_OT_EditAttribute(Operator):
                     box_visibility.prop_search(self, 'bone_pointer', context.scene.nextr_rig_object_pointer.data, 'bones')
             box_visibility.prop(self, "visible_pointer", icon="RESTRICT_VIEW_OFF" if self.visible_pointer else "RESTRICT_VIEW_ON", text="Show when selected" if self.visible_pointer else "Show when NOT selected")
         elif self.variable_type == 'data_path':
-            box_visibility.prop(self, "visibility_data_path")
-            box_visibility.prop(self, 'visibility_value')
+            visibility_row = box_visibility.row(align=True)
+            visibility_row.prop(context.scene, 'nextr_rig_visibility_prop_type', icon_only=True)
+            prop_type = "objects"
+            try:
+                prop_type = get_types()[context.scene['nextr_rig_visibility_prop_type']].lower()
+            except:
+                pass
+            visibility_row.prop_search(self, 'data_path_block_pointer', bpy.data, prop_type, text="")
+            valid_path = True
+            try: 
+                valid_path = eval('bpy.data.'+prop_type+'["'+self.data_path_block_pointer+'"].'+self.visibility_data_path) 
+            except:
+                valid_path = False
+            box_visibility.prop(self, "visibility_data_path", icon="CHECKMARK" if valid_path else "ERROR")
+            box_visibility.prop(self, 'visibility_data_path_expression')
         if 'synced' in self.attribute:
             if self.attribute['synced']:
                 box_synced = box.box()
@@ -660,6 +699,8 @@ def get_attribute_by_path(context, panel_name, path):
                     if path == a['path']:
                         return a
     return False
+   
+
 
 classes = (VIEW3D_PT_nextr_rig_debug,
 OPS_OT_PinActiveObject,
@@ -691,9 +732,29 @@ def setup_rig_layers():
         setattr(bpy.types.Scene, 'nextr_rig_layers_row_'+str(i), ui_setup_int(None, "","On which row is the layer going to be in the UI",i,1,32))
         setattr(bpy.types.Scene, 'nextr_rig_layers_index_'+str(i), ui_setup_int(None, "","Which rig layers is going to be affected by this toggle",i,0,31))
 
+def ui_setup_enum_options(array, description_prefix,icons=[]):
+    "helper function used to setup enum options with icons"
+    options = []
+    for i in range(len(array)):
+        icon = ""
+        if i < len(icons):
+            icon = icons[i]
+        options.append(("OP"+str(i), array[i], description_prefix+": "+ array[i], icon,i))
+    return options
+
+def get_types():
+    "return all of the types we want to support"
+    return ["ACTIONS", "ARMATURES", "BRUSHES", "CAMERAS", "CACHE_FILES", "CURVES", "FONTS", "GREASE_PENCILS", "COLLECTIONS", "IMAGES", "SHAPE_KEYS", "LIGHTS", "LIBRARIES", "LINESTYLES", "LATTICES", "MASKS", "MATERIALS", "METABALLS", "MESHES", "MOVIECLIPS", "NODE_GROUPS", "OBJECTS", "PAINT_CURVES", "PALETTES", "PARTICLES", "LIGHTPROBES", "SCENES", "SOUNDS", "SPEAKERS", "TEXTS", "TEXTURES", "HAIR", "POINTCLOUD", "VOLUMES", "WINDOW_MANAGERS", "WORLDS", "WORKSPACES"]
+     
+def setup_visibility_driver_prop():
+    "set ups enum used to determine ID-Blocks type with icons"
+    icons = ["ACTION", "ARMATURE_DATA", "BRUSH_DATA", "CAMERA_DATA", "FILE_CACHE", "CURVE_DATA", "FONT_DATA", "GREASEPENCIL", "OUTLINER_COLLECTION", "IMAGE_DATA", "SHAPEKEY_DATA", "LIGHT", "LIBRARY_DATA_DIRECT", "LINE_DATA", "LATTICE_DATA", "MOD_MASK", "MATERIAL", "META_DATA", "MESH_DATA", "TRACKER", "NODETREE", "OBJECT_DATA", "CURVE_BEZCURVE", "COLOR", "PARTICLE_DATA", "OUTLINER_OB_LIGHTPROBE", "SCENE", "SOUND", "SPEAKER", "TEXT", "TEXTURE", "HAIR", "POINTCLOUD_DATA", "VOLUME_DATA", "WINDOW", "WORLD", "WORKSPACE"]
+    setattr(bpy.types.Scene, 'nextr_rig_visibility_prop_type', ui_setup_enum(None,"","Type of ID-Block which will  be used", ui_setup_enum_options(get_types(), "Data ID-Block which will be used", icons),21))
+
 def register():
     setup_custom_keys()
     setup_rig_layers()
+    setup_visibility_driver_prop()
     for c in classes:
         register_class(c)
     bpy.types.WM_MT_button_context.append(render_copy_data_path)
