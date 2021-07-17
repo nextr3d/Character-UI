@@ -352,7 +352,7 @@ class OPS_OT_EditAttribute(Operator):
                     if context.scene.nextr_rig_object_pointer.name:
                         if context.scene.nextr_rig_object_pointer.type == "ARMATURE":
                             if not self.bone_pointer:
-                                self.report({'WARNING'}, "You need to set the bone! Did not save!")
+                                self.report({'WARNING'}, "You need to set the bone! Removed visibility driver!")
                                 return {'CANCELLED'}
                             a['visibility']['object'] = context.scene.nextr_rig_object_pointer.name
                             a['visibility']['bone'] = self.bone_pointer
