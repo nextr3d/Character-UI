@@ -358,19 +358,22 @@ class OPS_OT_EditAttribute(Operator):
                             a['visibility']['bone'] = self.bone_pointer
                         a['visibility']['value'] = self.visible_pointer
             else:
-                prop_type = "objects"
-                try:
-                    prop_type = get_types()[context.scene['nextr_rig_visibility_prop_type']].lower()
-                except:
-                    pass
-                new_data_path = 'bpy.data.'+prop_type+'["'+self.data_path_block_pointer+'"].'+self.visibility_data_path
-                try: 
-                    valid_path = eval(new_data_path) 
-                except:
-                   self.report({'ERROR'}, "Invalid Data Path!")
-                   return {'CANCELLED'}
-                a['visibility']['data_path'] = new_data_path
-                a['visibility']['expression'] = self.visibility_data_path_expression
+                if self.data_path_block_pointer and self.visibility_data_path:
+                    prop_type = "objects"
+                    try:
+                        prop_type = get_types()[context.scene['nextr_rig_visibility_prop_type']].lower()
+                    except:
+                        pass
+                    new_data_path = 'bpy.data.'+prop_type+'["'+self.data_path_block_pointer+'"].'+self.visibility_data_path
+                    try: 
+                        eval(new_data_path) 
+                        a['visibility']['data_path'] = new_data_path
+                        a['visibility']['expression'] = self.visibility_data_path_expression
+                    except:
+                        self.report({'ERROR'}, "Invalid Data Path!")
+                        return {'CANCELLED'}
+                else:
+                    del a['visibility']
             a['name'] = self.name
             a['path'] = self.path
             
