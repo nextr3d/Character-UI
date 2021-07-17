@@ -80,11 +80,11 @@ class NextrRig_Utils:
                                                         if not p['visibility']['value']:
                                                             render = not render
                                     else:
-                                        if p['visibility']['data_path'] != "":
-                                            try:
+                                        try:
+                                            if p['visibility']['data_path'] != "":
                                                 render = eval(p['visibility']['data_path']+p['visibility']['expression'])
-                                            except:
-                                                continue
+                                        except:
+                                            continue
                             if render:
                                 row = group_box.row(align=True)
                                 delimiter = '][' if '][' in p['path'] else '.'
@@ -362,14 +362,15 @@ class Nextr_Rig(PropertyGroup):
         if data[attributes_name]:
             for data_keys in enumerate(data[attributes_name]):
                 panel = data[attributes_name][data_keys[1]]
-                for panel_keys in enumerate(panel):
-                    if 'synced' in panel[panel_keys[0]]:
-                        if panel[panel_keys[0]]['synced']:
-                            for attribute_keys in enumerate(panel[panel_keys[0]]['synced']):
-                                try:
-                                    exec(attribute_keys[1]+'='+panel[panel_keys[0]]['path'])
-                                except:
-                                    print("Attributes are not the same type, name: ", panel[panel_keys[0]]['name'], ", path:", panel[panel_keys[0]]['path'])
+                for g in panel:
+                    for panel_keys in enumerate(g["attributes"]):
+                        if 'synced' in g["attributes"][panel_keys[0]]:
+                            if g["attributes"][panel_keys[0]]['synced']:
+                                for attribute_keys in enumerate(g["attributes"][panel_keys[0]]['synced']):
+                                    try:
+                                        exec(attribute_keys[1]+'='+g["attributes"][panel_keys[0]]['path'])
+                                    except:
+                                        print("Attributes are not the same type, name: ", g["attributes"][panel_keys[0]]['name'], ", path:", g["attributes"][panel_keys[0]]['path'])
 
 class Nextr_Rig_Rig_Layers(PropertyGroup):
     rig_layers: [[{'key':0, 'name':'Face'}]]

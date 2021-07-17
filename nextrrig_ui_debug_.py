@@ -47,7 +47,7 @@ class NextrRigDebug_Utils():
                 for g in o.data[attributes_key][panel]:
                     op = layout.operator(OPS_OT_AddAttribute.bl_idname, text=g['name'].replace("_", " "))
                     op.panel_name = panel
-                    op.sub_panel_name = g["name"]
+                    op.group_name = g["name"]
         return layout
 def get_rig(name):
     if name in bpy.data.objects:
@@ -246,7 +246,7 @@ class OPS_OT_AddAttribute(Operator):
     bl_description = 'Adds the attribute to the UI or syncs it to another attribute'
     
     panel_name : StringProperty()
-    sub_panel_name: StringProperty()
+    group_name: StringProperty()
     parent_path :  StringProperty()
 
     def execute(self, context):
@@ -267,19 +267,21 @@ class OPS_OT_AddAttribute(Operator):
             if attributes_key in o.data:
                 arr = []
                 if self.parent_path:
-                    arr = o.data[attributes_key][self.panel_name][self.sub_panel_name]
-                    if self.parent_path:
-                        arr = sync_attribute_to_parent(arr, self.parent_path, path)
-                    else:
-                        try:
-                            arr.append({'path': path, 'name':name})
-                        except:
-                            arr = []
-                            arr.append({'path': path, 'name':name})
-                    o.data[attributes_key][self.panel_name][self.sub_panel_name] = arr
+                    for g in o.data[attributes_key][self.panel_name]:
+                        if g["name"] == self.group_name:
+                            arr = g["attributes"]
+                            if self.parent_path:
+                                arr = sync_attribute_to_parent(arr, self.parent_path, path)
+                            else:
+                                try:
+                                    arr.append({'path': path, 'name':name})
+                                except:
+                                    arr = []
+                                    arr.append({'path': path, 'name':name})
+                            g["attributes"] = arr
                 else:
                     for g in o.data[attributes_key][self.panel_name]:
-                        if g["name"] == self.sub_panel_name:
+                        if g["name"] == self.group_name:
                             try:
                                 att = g["attributes"].to_list()
                                 att.append({'path': path, 'name':name})
@@ -481,6 +483,7 @@ class OPS_OT_EditAttribute(Operator):
                     op = row.operator(OPS_OT_RemoveSyncedAttribute.bl_idname, text="", icon="TRASH")
                     op.path = self.path
                     op.panel_name = self.panel_name
+                    op.group_name = self.group_name
                     op.attribute_path = synced
 
 class OPS_OT_RemoveSyncedAttribute(Operator):
@@ -490,11 +493,14 @@ class OPS_OT_RemoveSyncedAttribute(Operator):
 
     path : StringProperty()
     panel_name : StringProperty()
+    group_name : StringProperty()
     attribute_path : StringProperty()
 
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self,event)
+
     def execute(self, context):
-        a = get_attribute_by_path(context, self.panel_name, self.path)
-        
+        a = get_attribute_by_path(context, self.panel_name,self.group_name, self.path)
         if a:
             synced = []
             synced = a['synced']
@@ -503,13 +509,16 @@ class OPS_OT_RemoveSyncedAttribute(Operator):
             new_attributes = []
             attributes_key = context.scene['nextr_rig_attributes_key']
             if attributes_key in o:
-                for attribute in o[attributes_key][self.panel_name]:
-                    if attribute['path'] == self.attribute_path:
-                        new_attributes.append(a)
-                    else:
-                        new_attributes.append(attribute)
-                o[attributes_key][self.panel_name] = new_attributes
-            self.report({'INFO'}, 'Removed synced attribute')
+                if self.panel_name in o[attributes_key]:
+                    for g in o[attributes_key][self.panel_name]:
+                        if g["name"] == self.group_name:
+                            for attribute in g["attributes"]:
+                                if attribute['path'] == self.attribute_path:
+                                    new_attributes.append(a)
+                                else:
+                                    new_attributes.append(attribute)
+                            g["attributes"] = new_attributes
+                            self.report({'INFO'}, 'Removed synced attribute')
             return {'FINISHED'}
             
         self.report({'INFO'}, "Couldn't find attribute with the path"+self.path)
@@ -872,14 +881,19 @@ def render_attributes_in_menu(layout, context, panel):
         o = get_edited_object(context)
         attributes_key = context.scene['nextr_rig_attributes_key']
         if panel in o.data[attributes_key]:
-            for p in o.data[attributes_key][panel]:
-                name = "Default Value"
-                
-                if p['name']:
-                    name= p['name']
-                op = layout.operator(OPS_OT_AddAttribute.bl_idname, text=name)
-                op.parent_path = p['path']
-                op.panel_name = panel
+            for g in o.data[attributes_key][panel]:
+                layout.separator()
+                layout.label(text=g["name"].replace("_"," "))
+                layout.separator()
+                for p in g["attributes"]:
+                    name = "Default Value"
+                    
+                    if p['name']:
+                        name= p['name']
+                    op = layout.operator(OPS_OT_AddAttribute.bl_idname, text=name)
+                    op.parent_path = p["path"]
+                    op.panel_name = panel
+                    op.group_name = g["name"]
     return layout
 
 def render_copy_data_path(self, context):
