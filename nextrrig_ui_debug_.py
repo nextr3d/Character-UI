@@ -639,22 +639,34 @@ class OPS_OT_EditAttributeGroup(Operator):
     bl_label = "Edit attribute group"
     bl_description = "Edit attribute group"
 
-    group_name : StringProperty()
     panel_name : StringProperty()
+    group_name : StringProperty()
     new_group_name : StringProperty(name="Group Name")
+    group_icon : StringProperty(name="Icon", description="Name of the Icon for the group. Enable the built-in addon Icon Viewer to see all of the available icons.")
 
     def invoke(self, context, event):
-        self.new_group_name = self.group_name.replace("_", " ")
-        return context.window_manager.invoke_props_dialog(self, width=350)
+        if context.active_object:
+            o = get_edited_object(context)
+            attributes_key = context.scene['nextr_rig_attributes_key']
+            if attributes_key in o.data:
+                if self.panel_name in o.data[attributes_key]:
+                    for g in o.data[attributes_key][self.panel_name]:
+                        if g["name"] == self.group_name:
+                            self.new_group_name = g["name"].replace("_", " ")
+                            self.group_icon = g["icon"]
+            
+            return context.window_manager.invoke_props_dialog(self, width=350)
+        return None
 
     def draw(self, context):
         self.layout.prop(self, "new_group_name")
+        self.layout.prop(self, "group_icon")
+        try:
+            self.layout.label(text="-   Icon Preview", icon=self.group_icon)
+        except:
+            self.layout.label(text="This icon does not exist - Icon Preview")
 
     def execute(self, context):
-        print(self.group_name, " ",self.panel_name, " ", self.new_group_name)
-        if self.group_name == self.new_group_name.replace(" ","_"):
-            self.report({'INFO'}, "No changes saved")
-            return {'FINISHED'}
         if context.active_object:
             o = get_edited_object(context)
             attributes_key = context.scene['nextr_rig_attributes_key']
@@ -662,13 +674,19 @@ class OPS_OT_EditAttributeGroup(Operator):
                 if self.panel_name in o.data[attributes_key]:
                     index = -1
                     for i in range(len(o.data[attributes_key][self.panel_name])):
+                        if self.group_name == self.new_group_name.replace(" ","_") and o.data[attributes_key][self.panel_name][i]["name"] ==self.new_group_name.replace(" ","_"):
+                            o.data[attributes_key][self.panel_name][i]["icon"] = self.group_icon
+                            self.report({'INFO'}, "Updated group's icon")
+                            return {'FINISHED'}
                         if o.data[attributes_key][self.panel_name][i]["name"] == self.new_group_name.replace(" ","_"):
                             self.report({'INFO'}, "No changes saved, duplicated name for one panel")
                             return {'CANCELLED'}
                         if o.data[attributes_key][self.panel_name][i]["name"] == self.group_name:
                             index = i
+                        
                     o.data[attributes_key][self.panel_name][index]["name"] = self.new_group_name.replace(" ","_")
-                    self.report({'INFO'}, "Updated Attribute Group name")
+                    # o.data[attributes_key][self.panel_name][index]["icon"] = self.group_icon
+                    self.report({'INFO'}, "Updated Attribute Group")
             return {'FINISHED'}
         else:
             self.report({'ERROR'}, "No active object.")
@@ -816,7 +834,10 @@ def render_attributes(element, panel_name, attributes):
                 expand_op = header_row.operator(OPS_OT_ExpandAttributeGroup.bl_idname, text="", icon="TRIA_DOWN" if g["expanded"] else "TRIA_RIGHT", emboss=False)
                 expand_op.panel_name = panel_name
                 expand_op.group_name = g["name"]
-                header_row.label(text=g["name"].replace("_", " "))
+                try:
+                    header_row.label(text=g["name"].replace("_", " "), icon=g["icon"])
+                except:
+                    header_row.label(text=g["name"].replace("_", " "))
                 #edit group operator
                 edit_op = header_row.operator(OPS_OT_EditAttributeGroup.bl_idname, text="", icon="PREFERENCES")
                 edit_op.panel_name = panel_name

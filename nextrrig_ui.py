@@ -63,7 +63,11 @@ class NextrRig_Utils:
                     expanded_op = header_row.operator(OPS_OT_ExpandAttributeGroup.bl_idname, emboss=False, text="",icon="TRIA_DOWN" if g["expanded"] else "TRIA_RIGHT" )
                     expanded_op.panel_name = panel_name
                     expanded_op.group_name = g["name"]
-                    header_row.label(text=g["name"].replace("_", " "))
+                    try:
+                        header_row.label(text=g["name"].replace("_", " "), icon=g["icon"])
+                    except:
+                        header_row.label(text=g["name"].replace("_", " "))
+
                     if g["expanded"]:
                         for p in g["attributes"]:
                             render = True
