@@ -653,7 +653,7 @@ class OPS_OT_EditAttributeGroup(Operator):
                     for g in o.data[attributes_key][self.panel_name]:
                         if g["name"] == self.group_name:
                             self.new_group_name = g["name"].replace("_", " ")
-                            self.group_icon = g["icon"]
+                            self.group_icon = g["icon"] if "icon" in g else ""
             
             return context.window_manager.invoke_props_dialog(self, width=350)
         return None
@@ -685,7 +685,7 @@ class OPS_OT_EditAttributeGroup(Operator):
                             index = i
                         
                     o.data[attributes_key][self.panel_name][index]["name"] = self.new_group_name.replace(" ","_")
-                    # o.data[attributes_key][self.panel_name][index]["icon"] = self.group_icon
+                    o.data[attributes_key][self.panel_name][index]["icon"] = self.group_icon
                     self.report({'INFO'}, "Updated Attribute Group")
             return {'FINISHED'}
         else:
@@ -798,7 +798,7 @@ class WM_MT_sync_attribute_panel(Menu):
         layout = self.layout
         layout.menu(WM_MT_sync_attribute_outfits_menu.bl_idname, text="Outfits Panel")
         layout.menu(WM_MT_sync_attribute_body_menu.bl_idname, text="Body Panel")
-        layout.menu(WM_MT_sync_attribute_rig_menu.bl_idname, text="Rig Layers Panel")
+        layout.menu(WM_MT_sync_attribute_rig_menu.bl_idname, text="Rig Panel")
 
 class WM_MT_sync_attribute_outfits_menu(Menu):
     bl_label = "no attribute name entered!"
