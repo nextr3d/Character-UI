@@ -82,7 +82,7 @@ class NextrRig_Utils:
                                     else:
                                         if p['visibility']['data_path'] != "":
                                             try:
-                                                render = eval(p['visibility']['data_path']) == p['visibility']['value']
+                                                render = eval(p['visibility']['data_path']+p['visibility']['expression'])
                                             except:
                                                 continue
                             if render:
