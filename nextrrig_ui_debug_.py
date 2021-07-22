@@ -7,7 +7,7 @@ bl_info = {
     "name": "Nextr Rig UI Debugger",
     "description": "Create very simple but functional menus for your rigs",
     "author": "Nextr3D",
-    "version": (1, 2, 0),
+    "version": (1, 3, 0),
     "blender": (2, 93, 1)
 }
 class NextrRigDebug_Utils():
@@ -194,6 +194,42 @@ class VIEW3D_PT_nextr_rig_debug_attributes(Panel):
                 render_attributes(box_rig_layers, 'rig', o.data[attributes_key])
             else:
                 layout.operator('nextr.empty', text="Object needs to be UI enabled to add custom attributes to it!", depress=True, emboss=False)
+
+class VIEW3D_PT_nextr_rig_debug_links(Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Nextrrig UI Debuger"
+    bl_label = "Nextrrig UI Debuger Links"
+
+    def draw(self, context):
+        layout = self.layout
+        if context.active_object:
+            o = get_edited_object(context)
+            if 'nextrrig_links' in o.data:
+                box = layout.box()
+                box.label(text="Links", icon="URL")
+                for s in o.data['nextrrig_links']:
+                    section_box = box.box()
+                    row = section_box.row(align=True)
+                    row.label(text=s)
+                    row.operator(OPS_OT_EditLinksSection.bl_idname, text="", icon="PREFERENCES").link_section = s
+                    row.operator(OPS_OT_RemoveLinksSection.bl_idname, text="", icon="TRASH").link_section = s
+                    for l in o.data['nextrrig_links'][s]:
+                        link_row = section_box.row(align=True)
+                        try:
+                            link_row.label(text=l, icon=o.data['nextrrig_links'][s][l][0])
+                        except:
+                            link_row.label(text=l)
+                        url = o.data['nextrrig_links'][s][l][1]
+                        link_row.operator("wm.url_open", text=url).url = url
+                        remove_link = link_row.operator(OPS_OT_RemoveLink.bl_idname, text="", icon="TRASH")
+                        remove_link.link_section = s
+                        remove_link.link = l
+                    section_box.operator(OPS_OT_AddLink.bl_idname, text="Add link", icon="PLUS").link_section = s
+                box.operator(OPS_OT_AddLinksSection.bl_idname, text="Add Links Section")
+            else:
+                layout.operator(OPS_OT_EnableNextrRigLinks.bl_idname, icon="PLUS")
+
 class OPS_OT_EnableNextrRig(Operator):
     bl_idname = 'nextr_debug.enable_rig'
     bl_label = 'Enable Nextrrig on object'
@@ -214,6 +250,7 @@ class OPS_OT_EnableNextrRig(Operator):
             master_collection.objects.link(o)
             o.data[context.scene["nextr_rig_properties_key"]] = {}
             o.data[context.scene["nextr_rig_attributes_key"]] = {}
+            o.data['nextrrig_links'] = {}
             bpy.context.scene.object.active = o
         return {'FINISHED'}
 
@@ -750,6 +787,155 @@ class OPS_OT_AttributeGroupChangePosition(Operator):
                         self.report({'INFO'}, "Moved attribute group down in the list")
                     o.data[attributes_key][self.panel_name] = att
         return {'FINISHED'}
+
+class OPS_OT_RemoveLinksSection(Operator):
+    bl_idname = 'nextr_debug.remove_links_section'
+    bl_label = "Remove section"
+    bl_description = "Removes links section"
+
+    link_section : StringProperty()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self,event)
+
+    def execute(self, context):
+        if context.active_object:
+             o = get_edited_object(context)
+             if "nextrrig_links" in o.data:
+                if self.link_section != "": # remove section
+                    new_sections = {}
+                    for s in o.data["nextrrig_links"]:
+                        if s != self.link_section:
+                            new_sections[s] = o.data["nextrrig_links"][s]
+                    o.data["nextrrig_links"] = new_sections
+                    self.report({"INFO"}, "Removed links section")
+        return {"FINISHED"}
+class OPS_OT_AddLinksSection(Operator):
+    bl_idname = 'nextr_debug.add_links_section'
+    bl_label = "Add Links Section"
+    bl_description = "Adds links section"
+
+    link_section_name : StringProperty(name="Name")
+
+    def execute(self, context):
+        if context.active_object:
+             o = get_edited_object(context)
+             if "nextrrig_links" in o.data:
+                if self.link_section_name != "" and self.link_section_name not in o.data["nextrrig_links"]:
+                    o.data["nextrrig_links"][self.link_section_name] = {}
+                    self.report({"INFO"}, "Added links section")
+                else:
+                    self.report({"WARNING"}, "Section with this name already exists!")
+                    return {"CANCELLED"}
+                return {"FINISHED"}
+        return {"CANCELED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=350)
+
+    def draw(self, context):
+        self.layout.prop(self, 'link_section_name')
+
+class OPS_OT_EditLinksSection(Operator):
+    bl_idname = 'nextr_debug.edit_links_section'
+    bl_label = "Edit Links Section"
+    bl_description = "Edits links section"
+
+    link_section : StringProperty()
+    link_section_name : StringProperty(name="New Name")
+
+    def invoke(self, context, event):
+        self.link_section_name = self.link_section 
+        return context.window_manager.invoke_props_dialog(self, width=350)
+
+    def draw(self, context):
+        self.layout.prop(self, 'link_section_name')
+
+    def execute(self, context):
+        if context.active_object:
+            o = get_edited_object(context)
+            if "nextrrig_links" in o.data:
+                if self.link_section_name not in o.data["nextrrig_links"]:
+                    new_sections = {}
+                    for s in o.data["nextrrig_links"]:
+                        if s != self.link_section:
+                            new_sections[s] = o.data["nextrrig_links"][s]
+                        else:
+                            new_sections[self.link_section_name] = o.data["nextrrig_links"][s]
+                    o.data["nextrrig_links"] = new_sections
+                    self.report({"INFO"}, "Updated section")
+                else:
+                    self.report({"ERROR"}, "Section with this name already exists!")
+                    return {"CANCELLED"}
+        return {"FINISHED"}
+
+class OPS_OT_RemoveLink(Operator):
+    bl_idname = 'nextr_debug.remove_link'
+    bl_label = "Remove link"
+    bl_description = "Removes link"
+
+    link_section : StringProperty()
+    link : StringProperty()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self,event)
+
+    def execute(self, context):
+        if context.active_object:
+             o = get_edited_object(context)
+             if "nextrrig_links" in o.data:
+                 if self.link_section in o.data["nextrrig_links"]:
+                     del o.data["nextrrig_links"][self.link_section][self.link]
+                     self.report({"INFO"}, "Removed Link")
+        return {"FINISHED"}                     
+
+class OPS_OT_AddLink(Operator):
+    bl_idname = 'nextr_debug.add_link'
+    bl_label = "Remove link"
+    bl_description = "Adds or removes link"
+
+    link_section : StringProperty()
+    link_text : StringProperty(name="Button Text")
+    link_icon : StringProperty(name="Button Icon")
+    link_url : StringProperty(name="URL Address")
+    
+    def execute(self, context):
+        if context.active_object:
+             o = get_edited_object(context)
+             if "nextrrig_links" in o.data:
+                if self.link_section in o.data["nextrrig_links"]:
+                    s = o.data["nextrrig_links"][self.link_section]
+                    if self.link_text != s:
+                        s[self.link_text] = (self.link_icon, self.link_url)
+                    else:
+                        self.report({"WARNING"}, "Duplicate link name")
+                        return {"CANCELLED"}
+        return {"FINISHED"}                     
+
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=350)
+
+    def draw(self, context):
+        self.layout.prop(self, 'link_icon')
+        try:
+            self.layout.label(text="-   Icon Preview", icon=self.link_icon)
+        except:
+            self.layout.label(text="This icon does not exist - Icon Preview")
+        self.layout.prop(self, 'link_text')
+        self.layout.prop(self, 'link_url')
+
+class OPS_OT_EnableNextrRigLinks(Operator):
+    bl_idname = 'nextr_debug.enable_nextrrig_links'
+    bl_label = "Enable Links Sections"
+    bl_description = "Adds custom property to the rig which allows you to create links sections containing links to your social media, websites, etc."
+
+    def execute(self, context):
+        if context.active_object:
+            o = get_edited_object(context)
+            o.data["nextrrig_links"] = {}
+            self.report({"INFO"}, "Enabled Links Sections")
+            return {"FINISHED"}
 class WM_MT_button_context(Menu):
     bl_label = "Add to UI"
 
@@ -957,8 +1143,6 @@ def get_attribute_by_path(context, panel_name, group_name, path):
                             if path == a['path']:
                                 return a
     return False
-   
-
 
 classes = (VIEW3D_PT_nextr_rig_debug,
 OPS_OT_PinActiveObject,
@@ -985,7 +1169,15 @@ OPS_OT_AddAttributeGroup,
 OPS_OT_ExpandAttributeGroup,
 OPS_OT_EditAttributeGroup,
 OPS_OT_RemoveAttributeGroup,
-OPS_OT_AttributeGroupChangePosition)
+OPS_OT_AttributeGroupChangePosition,
+VIEW3D_PT_nextr_rig_debug_links,
+OPS_OT_AddLinksSection,
+OPS_OT_RemoveLinksSection,
+OPS_OT_EditLinksSection,
+OPS_OT_AddLink,
+OPS_OT_RemoveLink,
+OPS_OT_EnableNextrRigLinks)
+
 def setup_custom_keys():
     setattr(bpy.types.Scene, 'nextr_rig_properties_key', ui_setup_string(None, "Custom name for the properties key", "if you in the ui script changed what the key's value is", get_edited_object(bpy.context).name+'_properties'))
     setattr(bpy.types.Scene, 'nextr_rig_attributes_key', ui_setup_string(None, "Custom name for the attributes key", "if you in the ui script changed what the key's value is", get_edited_object(bpy.context).name+'_attributes'))

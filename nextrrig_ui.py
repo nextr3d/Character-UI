@@ -12,16 +12,8 @@ bl_info = {
     "name": "Nextr Rig UI",
     "description": "Script which generates nice UI for your rigs",
     "author": "Nextr3D",
-    "version": (4, 3, 0),
+    "version": (4, 4, 0),
     "blender": (2, 92, 0)
-}
-
-links = {
-    "Link 1 Header": {
-        "sub link 1": ("USER", "test.com"),
-        "sub link 2": ("FUND", "test.com"),
-        "sub link 3": ("URL", "test.com")
-    }
 }
 
 class NextrRig_Utils:
@@ -494,13 +486,18 @@ class VIEW3D_PT_links(VIEW3D_PT_nextrRig):
         layout.operator('nextr.empty', text='Nextr Rig UI v'+str(bl_info['version'][0])+'.'+str(
             bl_info['version'][1])+'.'+str(bl_info['version'][2]), icon='SETTINGS', emboss=False, depress=True)
         col = layout.column()
-        for user in links:
-            box = col.box()
-            box.operator('nextr.empty', text=user,  emboss=False, depress=True)
-            column = box.column(align=True)
-            for link in links[user]:
-                column.operator(
-                    "wm.url_open", text=link, icon=links[user][link][0]).url = links[user][link][1]
+        data = NextrRig_Utils.get_rig().data
+        if "nextrrig_links" in data:
+            for section in data["nextrrig_links"]:
+                box = col.box()
+                box.operator('nextr.empty', text=section,  emboss=False, depress=True)
+                column = box.column(align=True)
+                for link in data["nextrrig_links"][section]:
+                    try:
+                        column.operator("wm.url_open", text=link, icon=data["nextrrig_links"][section][link][0]).url = data["nextrrig_links"][section][link][1]
+                    except:
+                        column.operator("wm.url_open", text=link).url = data["nextrrig_links"][section][link][1]
+
 
 class VIEW3D_PT_body(VIEW3D_PT_nextrRig):
     "Body panel"
@@ -581,7 +578,7 @@ class OPS_OT_Empty(Operator):
     "for empty operator used only as text"
     bl_idname = 'nextr.empty'
     bl_label = 'Text'
-    bl_description = 'Header'
+    bl_description = '..'
 
     def execute(self, context):
         pass
