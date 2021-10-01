@@ -106,6 +106,11 @@ class CharacterUIUtils:
                     return o
         return False
     @staticmethod
+    def get_props_from_character():
+        ch = CharacterUIUtils.get_character()
+        return getattr(ch, "%s%s"%(custom_prefix, character_id))
+
+    @staticmethod
     def create_driver(driver_id,driver_target, driver_path, driver_expression, prop_name):
        
         driver_target.driver_remove(driver_path)
@@ -159,11 +164,10 @@ class VIEW3D_PT_body(VIEW3D_PT_characterUI):
         layout = self.layout
         if CharacterUIUtils.get_character():
             box = layout.box()
-            ch = CharacterUIUtils.get_character()
-            props = getattr(ch, "%s%s"%(custom_prefix, character_id))
+            props = CharacterUIUtils.get_props_from_character()
             hair_row = box.row(align=True)
             hair_row.prop(props, "hair_enum")
-            hair_row.prop(props, "hair_lock", icon="LOCKED" if props["hair_lock"] else "UNLOCKED", toggle=True )
+            hair_row.prop(props, "hair_lock", icon="LOCKED" if props.hair_lock else "UNLOCKED", toggle=True )
 
         
         
