@@ -13,25 +13,25 @@ class OPS_OT_GenerateScript(Operator):
     
     character_id : StringProperty()
     character_id_key : StringProperty()
-
+    rig_layers_key : StringProperty()
 
     def invoke(self, context, event):
         return context.window_manager.invoke_confirm(self,event)
 
     def execute(self, context):
         if self.character_id:
-            text = load_ui_script(self.character_id, self.character_id_key)
+            text = load_ui_script(self.character_id, self.character_id_key, self.rig_layers_key)
             for o in bpy.data.objects:
                 if self.character_id_key in o.data:
                     if o.data[self.character_id_key] == self.character_id:
-                        o.data["CharacterUI_textfile"] = text 
+                        o.data["CharacterUI_textfile"] = text
             self.report({"INFO"}, "Generated script")
         else:
             self.report({"ERROR"}, "You need to generate rig id!")
             return {"FAILED"}
         return {'FINISHED'}
 
-def load_ui_script(character_id, character_id_key):
+def load_ui_script(character_id, character_id_key, rig_layers_key):
    
     file_name = "%s.py"%(character_id)
     text = bpy.data.texts.get(file_name)
@@ -51,6 +51,8 @@ def load_ui_script(character_id, character_id_key):
         if line == "#script variables\n":
             text.write("character_id_key=\"%s\"\n"%(character_id_key))
             text.write("character_id=\"%s\"\n"%(character_id))
+            text.write("rig_layers_key=\"%s\"\n"%(rig_layers_key))
+
 
     readfile.close()
 

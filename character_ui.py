@@ -7,6 +7,7 @@ from bpy.props import EnumProperty, BoolProperty, StringProperty, IntProperty, F
 available variables
 character_id
 character_id_key
+rig_layers_key
 """
 #script variables
 custom_prefix = "CharacterUI_"
@@ -124,7 +125,10 @@ class CharacterUIUtils:
         var.targets[0].data_path = prop_name
         
         return
-
+    @staticmethod
+    def safe_render(parent, data, prop, **kwargs):
+        if hasattr(data, prop):
+            parent.prop(data, prop, **kwargs)
 class VIEW3D_PT_characterUI(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -166,38 +170,72 @@ class VIEW3D_PT_body(VIEW3D_PT_characterUI):
             box = layout.box()
             props = CharacterUIUtils.get_props_from_character()
             hair_row = box.row(align=True)
-            hair_row.prop(props, "hair_enum")
-            hair_row.prop(props, "hair_lock", icon="LOCKED" if props.hair_lock else "UNLOCKED", toggle=True )
+            CharacterUIUtils.safe_render(hair_row, props, "hair_enum")
+            if hasattr(props, "hair_lock"):
+                CharacterUIUtils.safe_render(hair_row, props, "hair_lock", icon="LOCKED" if props.hair_lock else "UNLOCKED", toggle=True )
 
-        
         
 class VIEW3D_PT_physics_panel(VIEW3D_PT_characterUI):
     "Physics Sub-Panel"
     bl_label = "Physics (Experimental)"
     bl_idname = "VIEW3D_PT_physics_panel"
     bl_parent_id = "VIEW3D_PT_body"
-
+    
+    @classmethod
+    def poll(self, context):
+        return False
     def draw(self, context):
         layout = self.layout
         box = layout.box()
         box.label(text="physics")
-
+        
 
 class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
     bl_label = "Rig"
     bl_idname = "VIEW3D_PT_rig_layers_"
+    
+    @classmethod
+    def poll(slef, context):
+        ch = CharacterUIUtils.get_character()
+        return ch and ch.type == "ARMATURE"
 
     def draw(self, context):
         box = self.layout.column().box()
+        box.label(text="Layers")
+        ch = CharacterUIUtils.get_character() 
+        if ch:
+            if rig_layers_key in ch.data:
+                #sorting "stolen" from CloudRig https://gitlab.com/blender/CloudRig/-/blob/a16df00d5da51d19f720f3e5fe917a84a85883a0/generation/cloudrig.py
+                layer_data = ch.data[rig_layers_key]
+                rig_layers = [dict(l) for l in layer_data]
 
-classes = (
+                for i, l in enumerate(rig_layers):
+                    # When the Rigify addon is not enabled, finding the original index after sorting is impossible, so just store it.
+                    l['index'] = i
+                    if 'row' not in l:
+                        l['row'] = 1
+
+                sorted_layers = sorted(rig_layers, key=lambda l: l['row'])
+                sorted_layers = [l for l in sorted_layers if 'name' in l and l['name']!=" "]
+                current_row_index = -1
+                row = box.row()
+                for rig_layer in sorted_layers:
+                    if rig_layer['name'] in ["", " "]: continue
+                    if rig_layer['name'].startswith("$"): continue
+                    
+                    if rig_layer['row'] > current_row_index:
+                        current_row_index = rig_layer['row']
+                        row = box.row()
+                    row.prop(ch.data, "layers", index=rig_layer['index'], toggle=True, text=rig_layer['name'])
+
+classes = [
     VIEW3D_PT_outfits,
     VIEW3D_PT_rig_layers,
     VIEW3D_PT_body,
     VIEW3D_PT_physics_panel,
     VIEW3D_PT_links,
     CharacterUI
-)
+]
 
 def register():
     for c in classes:
@@ -208,8 +246,10 @@ def register():
     CharacterUI.initialize()
 
 def unregister():
-   pass
-
+    for c in reversed(classes):
+        unregister_class(c)
+    
+    delattr(bpy.types.Object, "%s%s"%(custom_prefix, character_id))
 if __name__ in ['__main__', 'builtins']:
     # __main__ when executed through the editor
     #builtins when executed after generation of the script

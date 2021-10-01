@@ -39,10 +39,13 @@ class VIEW3D_PT_character_ui_generate(Panel):
             if context.scene.character_ui_object_id in o.data:
                 character_id_key = context.scene.character_ui_object_id
                 character_id = o.data[character_id_key]
+                rig_layers_key = context.scene.character_ui_rig_layers_key
                 row.label(text="Rig ID: %s"%(character_id))
                 op = box.operator("characterui_generate.generate_script")
                 op.character_id = character_id
                 op.character_id_key = character_id_key
+                op.rig_layers_key = rig_layers_key
+
 
         else:
             box.label(text="You have to select an object!", icon="ERROR")
@@ -54,7 +57,7 @@ def register():
     bpy.types.Scene.character_ui_object_id = StringProperty(
         name = "Custom Property Name",
         description = "Custom Property used for storing the Character UI ID, if your character has a unique ID you can use it too",
-        default = "character_id"
+        default = "character_id",
     )
     for c in classes:
         register_class(c)

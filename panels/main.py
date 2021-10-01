@@ -8,7 +8,11 @@ class CharacterUIMainUpdates:
     def update_character_ui_object(self, context):
         if context.scene.character_ui_object:
             o = context.scene.character_ui_object
-            print(o.name)
+            CharacterUIMainUpdates.update_character_ui_object_collections(context, o)
+            CharacterUIMainUpdates.update_character_ui_object_rig_layers(context, o)
+
+    @staticmethod
+    def update_character_ui_object_collections(context, o):
             outfits = None
             hair = None
             body = None
@@ -22,8 +26,24 @@ class CharacterUIMainUpdates:
             context.scene.character_ui_hair_collection = hair
             context.scene.character_ui_outfits_collection = outfits
             context.scene.character_ui_object_body = body
+    @staticmethod
+    def update_character_ui_object_rig_layers(context, o):
+        key = context.scene.character_ui_rig_layers_key
+        for i in range(31):
+            visible = False
+            name = ""
+            row = i + 1
+            if key in o:
+                if len(o[key][i]["name"][:1]) > 0:
+                    visible = not o[key][i]["name"][:1] == "$"
+                    name = o[key][i]["name"] if visible else o[key][i]["name"][1:]
+                    row = o[key][i]["row"] + 1
 
+            context.scene["character_ui_row_visible_%i"%(i)] = visible
+            context.scene["character_ui_row_name_%i"%(i)] = name
+            context.scene["character_ui_row_index_%i"%(i)] = row
 
+            
     @staticmethod
     def update_collections(self, context):
         if context.scene.character_ui_object:
