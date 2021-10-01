@@ -6,6 +6,7 @@ from bpy.utils import (register_class, unregister_class)
 
 
 class OPS_OT_GenerateScript(Operator):
+    "Generates script, executes it and adds it to the character's custom props"
     bl_idname = 'characterui_generate.generate_script'
     bl_label = 'Generate UI'
     bl_description = 'Generates the UI script'
@@ -19,7 +20,12 @@ class OPS_OT_GenerateScript(Operator):
 
     def execute(self, context):
         if self.character_id:
-            load_ui_script(self.character_id, self.character_id_key)
+            text = load_ui_script(self.character_id, self.character_id_key)
+            for o in bpy.data.objects:
+                if self.character_id_key in o.data:
+                    if o.data[self.character_id_key] == self.character_id:
+                        o.data["CharacterUI_textfile"] = text 
+            self.report({"INFO"}, "Generated script")
         else:
             self.report({"ERROR"}, "You need to generate rig id!")
             return {"FAILED"}
