@@ -8,8 +8,8 @@ available variables
 character_id
 character_id_key
 """
-custom_prefix = "CharacterUI_"
 #script variables
+custom_prefix = "CharacterUI_"
 
 
 bl_info = {
@@ -41,17 +41,20 @@ class CharacterUI(PropertyGroup):
         hair_collection = ch.data["hair_collection"]
         items = [*hair_collection.children, *hair_collection.objects]
         names = [o.name for o in items]
-        for i in enumerate(items):
-            print(i)
-            if hasattr(i[1], "type"):
-                CharacterUIUtils.create_driver(ch, i[1], 'hide_viewport', "characterui!=%i"%(i[0]), "%s.hair_enum"%(key))
-                CharacterUIUtils.create_driver(ch, i[1], 'hide_render', "characterui!=%i"%(i[0]), "%s.hair_enum"%(key))
 
-            else:
-                for c in i[1].objects:
-                    CharacterUIUtils.create_driver(ch, c, 'hide_viewport', "characterui!=%i"%(i[0]), "%s.hair_enum"%(key))
-                    CharacterUIUtils.create_driver(ch, c, 'hide_render', "characterui!=%i"%(i[0]), "%s.hair_enum"%(key))
+        def create_hair_drivers(target, index):
+            CharacterUIUtils.create_driver(ch, target, 'hide_viewport', "characterui!=%i"%(index), "%s.hair_enum"%(key))
+            CharacterUIUtils.create_driver(ch, target, 'hide_render', "characterui!=%i"%(index), "%s.hair_enum"%(key))
+        
+        def recursive_hair(hair_items, index = -1):
+            for i in enumerate(hair_items):
+                print(i)
+                if hasattr(i[1], "type"):
+                    create_hair_drivers(i[1], i[0] if index < 0 else index)
+                else:
+                    recursive_hair([*i[1].children, *i[1].objects], i[0])
 
+        recursive_hair(items)
         default = 0
         if "hair_enum" in data:
             default = data["hair_enum"]
@@ -59,10 +62,14 @@ class CharacterUI(PropertyGroup):
             self.ui_setup_enum('hair_enum', None, "Hairdos", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
         except:
             pass
+        
+
+
 
     @classmethod
     def ui_setup_toggle(self, property_name, update_function, name='Name', description='Empty description', default=False):
         "method for easier creation of toggles (buttons)"
+        print(property_name, default)
         prop = BoolProperty(
             name=name,
             description=description,
@@ -70,8 +77,8 @@ class CharacterUI(PropertyGroup):
             default=default
         )
         setattr(self, property_name, prop)
-    @classmethod
     
+    @classmethod   
     def ui_setup_enum(self, property_name, update_function, name="Name", description="Empty description", items=[], default=0):
         "method for easier creation of enums (selects)"
         prop = EnumProperty(
@@ -107,8 +114,8 @@ class CharacterUIUtils:
         driver.type = "SCRIPTED"
         driver.expression = driver_expression
         var = driver.variables.new()
-        var.name                 = 'characterui'
-        var.targets[0].id        = driver_id
+        var.name = 'characterui'
+        var.targets[0].id = driver_id
         var.targets[0].data_path = prop_name
         
         return
