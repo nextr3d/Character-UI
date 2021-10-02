@@ -52,6 +52,7 @@ def register():
   
 
 def unregister():
+    del bpy.types.Scene.character_ui_mask_outfit_piece
     for c in reversed(classes):
         unregister_class(c)
 

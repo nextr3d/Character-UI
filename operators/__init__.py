@@ -1,10 +1,12 @@
 from . import links
 from . import generate_character_ui_script
-from. import use_as_mask
+from . import use_as_mask
+from . import use_as_deformer
 
 modules = [
 	links,
 	use_as_mask,
+	use_as_deformer,
    	generate_character_ui_script
 ]
 

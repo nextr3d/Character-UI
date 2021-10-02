@@ -32,6 +32,7 @@ class CharacterUI(PropertyGroup):
                 ch[key] = {}
             if "body_object" in ch.data and ch.data["body_object"]:
                 CharacterUI.remove_body_modifiers_drivers(ch)
+                CharacterUI.remove_body_shape_keys_drivers(ch)
             if "hair_collection" in ch.data and ch.data["hair_collection"]:
                 CharacterUI.build_hair(ch, key)
             if "outfits_collection" in ch.data and ch.data["outfits_collection"]:
@@ -54,10 +55,18 @@ class CharacterUI(PropertyGroup):
         self.ui_build_outfit_buttons(ch, key)
     @classmethod
     def remove_body_modifiers_drivers(self, ch):
-        "removes drivers from the modifiers"
-        for m in ch.data["body_object"].modifiers:
-            m.driver_remove("show_viewport")
-            m.driver_remove("show_render")
+        "removes drivers from modifiers"
+        for m in ch.data["character_ui_masks"]:
+            if m["modifier"] in ch.data["body_object"].modifiers:
+                ch.data["body_object"].modifiers[m["modifier"]].driver_remove("show_viewport")
+                ch.data["body_object"].modifiers[m["modifier"]].driver_remove("show_render")
+    
+    @classmethod
+    def remove_body_shape_keys_drivers(self, ch):
+        "removes drivers from shape keys"
+        for s in ch.data["character_ui_shape_keys"]:
+            if s["shape_key"] < len(ch.data["body_object"].data.shape_keys.key_blocks):
+                ch.data["body_object"].data.shape_keys.key_blocks[s["shape_key"]].driver_remove("value")
 
     @classmethod
     def ui_build_outfit_buttons(self, ch, key):
@@ -91,11 +100,15 @@ class CharacterUI(PropertyGroup):
                     if ch.data["body_object"]:
                         body = ch.data["body_object"]
                         for mask in ch.data["character_ui_masks"]:
-                            print(mask["modifier"])
                             if mask["driver_id"] == o and mask["modifier"] in body.modifiers:
-                                CharacterUIUtils.create_driver(o, ch.data["body_object"].modifiers[mask["modifier"]], "show_viewport", "chui_object==0", [{"name": "chui_object", "path":"hide_viewport" }])
-                                CharacterUIUtils.create_driver(o, ch.data["body_object"].modifiers[mask["modifier"]], "show_render", "chui_object==0", [{"name": "chui_object", "path":"hide_render" }])
-
+                                CharacterUIUtils.create_driver(o, body.modifiers[mask["modifier"]], "show_viewport", "chui_object==0", [{"name": "chui_object", "path":"hide_viewport" }])
+                                CharacterUIUtils.create_driver(o, body.modifiers[mask["modifier"]], "show_render", "chui_object==0", [{"name": "chui_object", "path":"hide_render" }])
+                if "character_ui_shape_keys" in ch.data and "body_object" in ch.data:
+                    if ch.data["body_object"]:
+                        body = ch.data["body_object"]
+                        for shape_key in ch.data["character_ui_shape_keys"]:
+                            if shape_key["driver_id"] == o and len(body.data.shape_keys.key_blocks) > shape_key["shape_key"]:
+                                CharacterUIUtils.create_driver(o, body.data.shape_keys.key_blocks[shape_key["shape_key"]], "value", "chui_object==0", [{"name": "chui_object", "path":"hide_render" }] )
 
             index += 1
 
