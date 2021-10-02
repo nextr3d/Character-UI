@@ -32,7 +32,55 @@ class CharacterUI(PropertyGroup):
                 ch[key] = {}
             if "hair_collection" in ch.data and ch.data["hair_collection"]:
                 CharacterUI.build_hair(ch, key)
+            if "outfits_collection" in ch.data and ch.data["outfits_collection"]:
+                CharacterUI.build_outfits(ch, key)
    
+    @classmethod
+    def build_outfits(self, ch, key):
+        "Builds outfit selector for the UI"
+        data = getattr(ch ,key)
+
+        outfits = ch.data["outfits_collection"].children.keys()
+        options = self.create_enum_options(outfits, "Show outfit: ")
+        default = 0 
+        if "outfits_enum" in data:
+            default = data["outfits_enum"]
+        try:
+            self.ui_setup_enum("outfits_enum", CharacterUI.update_hair_by_outfit, "Outfits", "Changes outfits", options, default)
+        except:
+            pass
+        self.ui_build_outfit_buttons(ch, key)
+    
+    @classmethod
+    def ui_build_outfit_buttons(self, ch, key):
+        "Builds individual button for outfit pieces, their locks and creates drivers"
+        data = getattr(ch ,key)
+        index = 0
+        for collection in ch.data["outfits_collection"].children:
+            objects = collection.objects
+            for o in objects:
+                default = False
+                default_lock = False
+                name = o.name_full.replace(" ", "_")+"_outfit_toggle"
+                if name in data and name+"_lock" in data:
+                    default = data[name]
+                    default_lock = data[name+"_lock"]
+                    
+                        
+                self.ui_setup_toggle(name, None, o.name_full, "Toggles outfit piece on and off", default)
+                self.ui_setup_toggle(name+"_lock", None, "", "Locks the outfit piece to be visible even when changing outfits", default_lock)
+                variables = [{"name": "chui_outfit", "path": "%s.outfits_enum"%(key)},{"name": "chui_object", "path": "%s.%s"%(key,name)}]
+                lock_expression = "chui_lock==1"
+                expression = "not (chui_object == 1 and (chui_outfit ==%i or chui_lock==1))"%(index)
+                if o.parent:
+                    expression = "not (chui_object == 1 and chui_parent == 0)"
+                    variables.append({"name": "chui_parent", "path": "hide_viewport", "driver_id": o.parent})
+                else:
+                    variables.append({"name": "chui_lock", "path": "%s.%s_lock"%(key,name)})
+                CharacterUIUtils.create_driver(ch, o, 'hide_viewport', expression, variables)
+                CharacterUIUtils.create_driver(ch, o, 'hide_render', expression, variables)
+            index += 1
+
     @classmethod
     def build_hair(self, ch, key):
         data = getattr(ch ,key) 
@@ -45,8 +93,8 @@ class CharacterUI(PropertyGroup):
         names = [o.name for o in items]
 
         def create_hair_drivers(target, index):
-            CharacterUIUtils.create_driver(ch, target, 'hide_viewport', "characterui!=%i"%(index), "%s.hair_enum"%(key))
-            CharacterUIUtils.create_driver(ch, target, 'hide_render', "characterui!=%i"%(index), "%s.hair_enum"%(key))
+            CharacterUIUtils.create_driver(ch, target, 'hide_viewport', "characterui_hair!=%i"%(index), [{"name": "characterui_hair", "path": "%s.hair_enum"%(key)}])
+            CharacterUIUtils.create_driver(ch, target, 'hide_render', "characterui_hair!=%i"%(index), [{"name": "characterui_hair", "path": "%s.hair_enum"%(key)}])
         
         def recursive_hair(hair_items, index = -1):
             for i in enumerate(hair_items):
@@ -61,7 +109,7 @@ class CharacterUI(PropertyGroup):
         if "hair_enum" in data:
             default = data["hair_enum"]
         try:
-            self.ui_setup_enum('hair_enum', None, "Hairdos", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
+            self.ui_setup_enum('hair_enum', None, "Hairstyle", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
         except:
             pass
         
@@ -71,7 +119,10 @@ class CharacterUI(PropertyGroup):
     @classmethod
     def ui_setup_toggle(self, property_name, update_function, name='Name', description='Empty description', default=False):
         "method for easier creation of toggles (buttons)"
-        print(property_name, default)
+        
+        props = CharacterUIUtils.get_props_from_character()
+        props[property_name] = default
+
         prop = BoolProperty(
             name=name,
             description=description,
@@ -83,6 +134,9 @@ class CharacterUI(PropertyGroup):
     @classmethod   
     def ui_setup_enum(self, property_name, update_function, name="Name", description="Empty description", items=[], default=0):
         "method for easier creation of enums (selects)"
+        props = CharacterUIUtils.get_props_from_character()
+        props[property_name] = default
+
         prop = EnumProperty(
             name=name,
             description=description,
@@ -99,6 +153,21 @@ class CharacterUI(PropertyGroup):
         for array_item in array:
             items.append(("OP"+str(array.index(array_item)),array_item, description_prefix+" "+array_item))
         return items
+
+    @staticmethod
+    def update_hair_by_outfit(self, context):
+        ch = CharacterUIUtils.get_character()
+        if ch:
+            props = CharacterUIUtils.get_props_from_character()
+            outfit_name = ch.data["outfits_collection"].children[props["outfits_enum"]].name
+            if "hair_collection" in ch.data and ch.data["hair_collection"]:
+                if not props["hair_lock"]:
+                    hairstyles = [*ch.data["hair_collection"].children, *ch.data["hair_collection"].objects]
+                    for hairstyle in enumerate(hairstyles):
+                        if outfit_name in hairstyle[1].name:
+                            props["hair_enum"] = hairstyle[0]
+                
+        
 class CharacterUIUtils:
     @staticmethod
     def get_character():
@@ -113,23 +182,56 @@ class CharacterUIUtils:
         return getattr(ch, "%s%s"%(custom_prefix, character_id))
 
     @staticmethod
-    def create_driver(driver_id,driver_target, driver_path, driver_expression, prop_name):
+    def create_driver(driver_id,driver_target, driver_path, driver_expression, variables):
        
         driver_target.driver_remove(driver_path)
         driver = driver_target.driver_add(driver_path)
         driver = driver.driver
         driver.type = "SCRIPTED"
         driver.expression = driver_expression
-        var = driver.variables.new()
-        var.name = 'characterui'
-        var.targets[0].id = driver_id
-        var.targets[0].data_path = prop_name
+        for variable in variables:
+            var = driver.variables.new()
+            var.name = variable["name"]
+            var.targets[0].id = variable["driver_id"] if "driver_id" in variable else driver_id
+            var.targets[0].data_path = variable["path"]
         
-        return
+        
     @staticmethod
     def safe_render(parent, data, prop, **kwargs):
         if hasattr(data, prop):
             parent.prop(data, prop, **kwargs)
+    @staticmethod
+    def render_outfit_piece(o, element, props, is_child = False):
+        "recursively render outfit piece buttons"
+        row = element.row(align=True)
+        name = o.name.replace(" ", "_")+"_outfit_toggle"
+        if o.data:
+            CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and ("settings" in o.data or len(o.children))) else ("TRIA_RIGHT" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE" ))
+        else:
+            CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and (len(o.children))) else ("TRIA_RIGHT" if not props[name] and (len(o.children)) else "NONE" ))
+        
+        if not is_child:
+            CharacterUIUtils.safe_render(row, props, name+"_lock",icon="LOCKED" if props[name+"_lock"] else "UNLOCKED")
+
+        if not o.data:
+            if len(o.children) and props[name]:
+                settings_box = element.box()
+                settings_box.label(text="Items", icon="MOD_CLOTH")
+                for child in o.children:
+                    child_name = child.name.replace(" ", "_")+"_outfit_toggle"
+                    if hasattr(props, child_name):
+                        CharacterUIUtils.render_outfit_piece(child, settings_box, props, True)
+
+            return
+
+        if (len(o.children) or "settings" in o.data) and props[name]:
+            if len(o.children):
+                settings_box = element.box()
+                settings_box.label(text="Items", icon="MOD_CLOTH")
+                for child in o.children:
+                    child_name = child.name.replace(" ", "_")+"_outfit_toggle"
+                    if hasattr(props, child_name):
+                        CharacterUIUtils.render_outfit_piece(child, settings_box, props, True)
 class VIEW3D_PT_characterUI(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -138,9 +240,7 @@ class VIEW3D_PT_characterUI(Panel):
     @classmethod
     def poll(self, context):
         ch = CharacterUIUtils.get_character()
-        if ch and ch == context.object:
-            return True
-        return False
+        return ch and ch == context.object
 
 class VIEW3D_PT_outfits(VIEW3D_PT_characterUI):
     bl_label = "Outfits"
@@ -150,15 +250,37 @@ class VIEW3D_PT_outfits(VIEW3D_PT_characterUI):
 
     def draw(self, context):
         layout = self.layout
+        ch = CharacterUIUtils.get_character()
+        props = CharacterUIUtils.get_props_from_character()
+        if ch and props:
+            if ch.data["outfits_collection"]:
+                outfits = ch.data["outfits_collection"]
+                if len(outfits.children) > 1:
+                    CharacterUIUtils.safe_render(layout, props, "outfits_enum")
+                box = layout.box()
+                for o in outfits.children[props['outfits_enum']].objects:
+                    is_top_child = True #True because if no parent than it's the top child
+                    if not o.parent == None:
+                        is_top_child = not o.users_collection[0] == o.parent.users_collection[0] #parent is in different collection so it has to 
+                    if is_top_child:
+                        CharacterUIUtils.render_outfit_piece(o,box, props)
+                    
+                    locked_pieces = {}
+                    
+                    for i, c in enumerate(outfits.children):
+                        pieces = []
+                        for o in c.objects:
+                            if i != props["outfits_enum"]:
+                                name = o.name.replace(" ", "_")+"_outfit_toggle"
+                                if props[name+"_lock"]:
+                                    pieces.append(o)
+                        if len(pieces):
+                            locked_pieces[c.name] = pieces
 
-class VIEW3D_PT_links(VIEW3D_PT_characterUI):
-    bl_label = "Links"
-    bl_idname = "VIEW3D_PT_links_"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.separator()
-
+                    for n,pcs in locked_pieces.items():
+                        box.label(text=n)
+                        for p in  pcs:
+                            CharacterUIUtils.render_outfit_piece(p, box, props)
 
 class VIEW3D_PT_body(VIEW3D_PT_characterUI):
     "Body panel"
@@ -198,7 +320,9 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
     @classmethod
     def poll(slef, context):
         ch = CharacterUIUtils.get_character()
-        return ch and ch.type == "ARMATURE"
+        if rig_layers_key not in ch.data:
+            return False
+        return ch and ch.type == "ARMATURE" and len(ch.data[rig_layers_key])
 
     def draw(self, context):
         box = self.layout.column().box()
