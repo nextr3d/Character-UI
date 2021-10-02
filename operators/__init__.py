@@ -1,8 +1,10 @@
 from . import links
 from . import generate_character_ui_script
+from. import use_as_mask
 
 modules = [
 	links,
+	use_as_mask,
    	generate_character_ui_script
 ]
 

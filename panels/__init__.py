@@ -1,4 +1,5 @@
 from . import main
+from . import body
 from . import rig_layers
 from . import miscellaneous
 from . import generate
@@ -6,6 +7,7 @@ from . import generate
 
 modules = [
     main,
+	body,
 	rig_layers,
 	miscellaneous,
 	generate

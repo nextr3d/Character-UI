@@ -30,6 +30,8 @@ class CharacterUI(PropertyGroup):
         if ch:
             if key not in ch:
                 ch[key] = {}
+            if "body_object" in ch.data and ch.data["body_object"]:
+                CharacterUI.remove_body_modifiers_drivers(ch)
             if "hair_collection" in ch.data and ch.data["hair_collection"]:
                 CharacterUI.build_hair(ch, key)
             if "outfits_collection" in ch.data and ch.data["outfits_collection"]:
@@ -50,7 +52,13 @@ class CharacterUI(PropertyGroup):
         except:
             pass
         self.ui_build_outfit_buttons(ch, key)
-    
+    @classmethod
+    def remove_body_modifiers_drivers(self, ch):
+        "removes drivers from the modifiers"
+        for m in ch.data["body_object"].modifiers:
+            m.driver_remove("show_viewport")
+            m.driver_remove("show_render")
+
     @classmethod
     def ui_build_outfit_buttons(self, ch, key):
         "Builds individual button for outfit pieces, their locks and creates drivers"
@@ -79,6 +87,16 @@ class CharacterUI(PropertyGroup):
                     variables.append({"name": "chui_lock", "path": "%s.%s_lock"%(key,name)})
                 CharacterUIUtils.create_driver(ch, o, 'hide_viewport', expression, variables)
                 CharacterUIUtils.create_driver(ch, o, 'hide_render', expression, variables)
+                if "character_ui_masks" in ch.data and "body_object" in ch.data:
+                    if ch.data["body_object"]:
+                        body = ch.data["body_object"]
+                        for mask in ch.data["character_ui_masks"]:
+                            print(mask["modifier"])
+                            if mask["driver_id"] == o and mask["modifier"] in body.modifiers:
+                                CharacterUIUtils.create_driver(o, ch.data["body_object"].modifiers[mask["modifier"]], "show_viewport", "chui_object==0", [{"name": "chui_object", "path":"hide_viewport" }])
+                                CharacterUIUtils.create_driver(o, ch.data["body_object"].modifiers[mask["modifier"]], "show_render", "chui_object==0", [{"name": "chui_object", "path":"hide_render" }])
+
+
             index += 1
 
     @classmethod
@@ -112,9 +130,6 @@ class CharacterUI(PropertyGroup):
             self.ui_setup_enum('hair_enum', None, "Hairstyle", "Switch between different hairdos", self.create_enum_options(names, "Enables: "), default)
         except:
             pass
-        
-
-
 
     @classmethod
     def ui_setup_toggle(self, property_name, update_function, name='Name', description='Empty description', default=False):
