@@ -1,7 +1,9 @@
+from . import links
 from . import generate_character_ui_script
 
 modules = [
-   generate_character_ui_script
+	links,
+   	generate_character_ui_script
 ]
 
 def register():

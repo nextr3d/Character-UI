@@ -20,7 +20,7 @@ class OPS_OT_GenerateScript(Operator):
 
     def execute(self, context):
         if self.character_id:
-            text = load_ui_script(self.character_id, self.character_id_key, self.rig_layers_key)
+            text = load_ui_script(context,self.character_id, self.character_id_key, self.rig_layers_key)
             for o in bpy.data.objects:
                 if self.character_id_key in o.data:
                     if o.data[self.character_id_key] == self.character_id:
@@ -31,7 +31,7 @@ class OPS_OT_GenerateScript(Operator):
             return {"FAILED"}
         return {'FINISHED'}
 
-def load_ui_script(character_id, character_id_key, rig_layers_key):
+def load_ui_script(context, character_id, character_id_key, rig_layers_key):
    
     file_name = "%s.py"%(character_id)
     text = bpy.data.texts.get(file_name)
@@ -52,7 +52,7 @@ def load_ui_script(character_id, character_id_key, rig_layers_key):
             text.write("character_id_key=\"%s\"\n"%(character_id_key))
             text.write("character_id=\"%s\"\n"%(character_id))
             text.write("rig_layers_key=\"%s\"\n"%(rig_layers_key))
-
+            text.write("links_key=\"%s\"\n"%(context.scene.character_ui_links_key))
 
     readfile.close()
 

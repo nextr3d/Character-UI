@@ -1,11 +1,13 @@
 from . import main
 from . import rig_layers
+from . import miscellaneous
 from . import generate
 
 
 modules = [
     main,
 	rig_layers,
+	miscellaneous,
 	generate
 ]
 

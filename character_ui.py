@@ -8,6 +8,7 @@ available variables
 character_id
 character_id_key
 rig_layers_key
+links_key
 """
 #script variables
 custom_prefix = "CharacterUI_"
@@ -227,6 +228,29 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
                         current_row_index = rig_layer['row']
                         row = box.row()
                     row.prop(ch.data, "layers", index=rig_layer['index'], toggle=True, text=rig_layer['name'])
+
+class VIEW3D_PT_links(VIEW3D_PT_characterUI):
+    bl_label = "Links"
+    bl_idname = "VIEW3D_PT_links"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.separator()
+        layout.label(text='Nextr Rig UI v'+str(bl_info['version'][0])+'.'+str(
+            bl_info['version'][1])+'.'+str(bl_info['version'][2]), icon='SETTINGS')
+        col = layout.column()
+        data = CharacterUIUtils.get_character().data
+        if links_key in data:
+            for section in data[links_key].to_dict():
+                box = col.box()
+                box.label(text=section)
+                column = box.column(align=True)
+                for link in data[links_key][section].to_dict():
+                    try:
+                        column.operator("wm.url_open", text=link, icon=data[links_key][section][link][0]).url = data[links_key][section][link][1]
+                    except:
+                        column.operator("wm.url_open", text=link).url = data[links_key][section][link][1]
+
 
 classes = [
     VIEW3D_PT_outfits,

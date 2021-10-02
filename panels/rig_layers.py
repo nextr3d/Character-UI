@@ -1,5 +1,3 @@
-import random
-import string
 import bpy
 from bpy.types import (Panel, PropertyGroup, Operator)
 from bpy.props import (PointerProperty, StringProperty, BoolProperty, IntProperty)
@@ -40,10 +38,12 @@ class VIEW3D_PT_character_ui_rig_layers(Panel):
                 box.prop(context.scene, "character_ui_rig_layers_key")
                 for i in range(31):
                     row = box.row(align=True)
+                    # row.label(text="%i."%(i))
                     icon = "HIDE_ON"
                     if "character_ui_row_visible_%i"%(i) in context.scene:
                         if context.scene["character_ui_row_visible_%i"%(i)]:
                             icon = "HIDE_OFF"
+                    first_col = row.column(align=True)
                     row.column(align=True).prop(context.scene, "character_ui_row_visible_%i"%(i), toggle=True, icon=icon)
                     row.column(align=True).prop(context.scene, "character_ui_row_name_%i"%(i))
                     row.column(align=True).prop(context.scene, "character_ui_row_index_%i"%(i))
