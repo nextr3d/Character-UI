@@ -34,7 +34,6 @@ class VIEW3D_PT_character_ui_generate(Panel):
             box.label(text="Generate UI for %s"%(o.name))
             box.prop(context.scene, "character_ui_object_id")
             row = box.row()
-
             row.operator(OPS_OT_GenerateID.bl_idname)
             if context.scene.character_ui_object_id in o.data:
                 character_id_key = context.scene.character_ui_object_id
@@ -45,8 +44,6 @@ class VIEW3D_PT_character_ui_generate(Panel):
                 op.character_id = character_id
                 op.character_id_key = character_id_key
                 op.rig_layers_key = rig_layers_key
-
-
         else:
             box.label(text="You have to select an object!", icon="ERROR")
 classes = (

@@ -168,9 +168,9 @@ classes = [
     OPS_OT_AddLink,
     OPS_OT_RemoveLink,
     OPS_OT_EnableLinks,
-    OPS_OT_RemoveLinksSection,
     OPS_OT_AddLinksSection,
-    OPS_OT_EditLinksSection
+    OPS_OT_EditLinksSection,
+    OPS_OT_RemoveLinksSection
 ]
 def register():
     for c in classes:
