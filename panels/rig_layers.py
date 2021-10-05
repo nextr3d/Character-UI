@@ -28,6 +28,11 @@ class VIEW3D_PT_character_ui_rig_layers(Panel):
     bl_category = "Character-UI"
     bl_label = "Character UI Rig Layers"
 
+
+    @classmethod
+    def poll(self, context):
+        ch = context.scene.character_ui_object
+        return ch and ch.type == "ARMATURE"
     def draw(self, context):
         layout = self.layout
         box = layout.box()

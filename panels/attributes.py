@@ -14,6 +14,8 @@ class VIEW3D_PT_character_ui_attributes(Panel):
     @classmethod
     def poll(self, context):
         ch = context.scene.character_ui_object
+        if not ch:
+            return False
         rig_id_key = context.scene.character_ui_object_id
         return rig_id_key and rig_id_key in ch.data
 
@@ -180,7 +182,6 @@ class CharacterUIAttributesUtils:
         if key in ch:
             if panel_name in ch[key]:
                 for g in ch[key][panel_name]:
-                    print(g["name"])
                     op = layout.operator("character_ui.add_new_attribute", text=g["name"].replace("_", " "))
                     op.panel_name = panel_name
                     op.group_name = g["name"]
@@ -202,6 +203,15 @@ class WM_MT_add_new_attribute(Menu):
         layout.menu(WM_MT_add_new_attribute_rig_menu.bl_idname, text="Rig Panel")
         layout.menu(WM_MT_add_new_attribute_miscellaneous_menu.bl_idname, text="Miscellaneous Panel")
 
+class WM_MT_sync_attribute_panel(Menu):
+    bl_label = "Sync To Attribute"
+    bl_idname = 'WM_MT_sync_attribute_panel'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.menu(WM_MT_sync_attribute_outfits_menu.bl_idname, text="Outfits Panel")
+        layout.menu(WM_MT_sync_attribute_body_menu.bl_idname, text="Body Panel")
+        layout.menu(WM_MT_sync_attribute_rig_menu.bl_idname, text="Rig Panel")
 
 class WM_MT_add_new_attribute_outfits_menu(Menu):
     bl_label = "no attribute name entered!"

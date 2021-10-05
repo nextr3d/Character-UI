@@ -11,6 +11,10 @@ class VIEW3D_PT_character_ui_miscellaneous(Panel):
     bl_category = "Character-UI"
     bl_label = "Character UI Miscellaneous"
 
+    @classmethod
+    def poll(self, context):
+        ch = context.scene.character_ui_object
+        return ch
     def draw(self, context):
         layout = self.layout
 
