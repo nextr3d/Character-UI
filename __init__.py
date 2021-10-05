@@ -27,7 +27,6 @@ def register():
             m.register()
 
 def unregister():
-    print("bye")
     for m in reversed(modules): #Apparently it's better to unregister modules in the reversed order
         if hasattr(m,"unregister"):
             m.unregister()
