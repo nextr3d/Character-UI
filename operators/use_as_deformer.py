@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import (Operator)
-from bpy.props import (PointerProperty, IntProperty) 
+from bpy.props import (PointerProperty, StringProperty) 
 from bpy.utils import (register_class, unregister_class)
 
 
@@ -9,7 +9,7 @@ class OPS_OT_UseAsDeformer(Operator):
     bl_label = "Select object to trigger shape key change for:"
     bl_description = "Sets the shape key to be toggled on/off based on an outfit piece"
 
-    shape_key: IntProperty()
+    shape_key: StringProperty()
 
     def invoke(self, context, event):
         ch = context.scene.character_ui_object
@@ -31,15 +31,16 @@ class OPS_OT_UseAsDeformer(Operator):
         if ch:
             found = False
             outfit_piece = context.scene.character_ui_shape_key_outfit_piece
+            shape_key_name = ch.data["body_object"].data.shape_keys.key_blocks[self.shape_key].name
             if "character_ui_shape_keys" not in ch.data:
                 ch.data["character_ui_shape_keys"] = []
             for item in ch.data["character_ui_shape_keys"]:
-                if item["shape_key"] == self.shape_key:
+                if item["shape_key"] == shape_key_name:
                     item["driver_id"] = outfit_piece 
                     found = True
             if not found:
                 shape_keys = ch.data["character_ui_shape_keys"].to_list()
-                shape_keys.append({"shape_key": self.shape_key, "driver_id": outfit_piece})
+                shape_keys.append({"shape_key": shape_key_name, "driver_id": outfit_piece})
                 ch.data["character_ui_shape_keys"] = shape_keys
         return {"FINISHED"}
 classes = [

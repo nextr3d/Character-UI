@@ -30,7 +30,7 @@ class VIEW3D_PT_character_ui_attributes_body(Panel):
     bl_parent_id = "VIEW3D_PT_character_ui_attributes"
     
     @classmethod
-    def poll(slef, context):
+    def poll(self, context):
         ch = context.scene.character_ui_object
         if ch:
             if ch.data["body_object"] or ch.data["hair_collection"]:
@@ -47,7 +47,7 @@ class VIEW3D_PT_character_ui_attributes_outfits(Panel):
     bl_parent_id = "VIEW3D_PT_character_ui_attributes"
     
     @classmethod
-    def poll(slef, context):
+    def poll(self, context):
         ch = context.scene.character_ui_object
         if ch:
             if ch.data["outfits_collection"]:
@@ -66,7 +66,7 @@ class VIEW3D_PT_character_ui_attributes_rig(Panel):
     bl_parent_id = "VIEW3D_PT_character_ui_attributes"
     
     @classmethod
-    def poll(slef, context):
+    def poll(self, context):
         ch = context.scene.character_ui_object
         if ch:
             return ch.type == "ARMATURE"

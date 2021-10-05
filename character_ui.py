@@ -56,17 +56,19 @@ class CharacterUI(PropertyGroup):
     @classmethod
     def remove_body_modifiers_drivers(self, ch):
         "removes drivers from modifiers"
-        for m in ch.data["character_ui_masks"]:
-            if m["modifier"] in ch.data["body_object"].modifiers:
-                ch.data["body_object"].modifiers[m["modifier"]].driver_remove("show_viewport")
-                ch.data["body_object"].modifiers[m["modifier"]].driver_remove("show_render")
+        if "character_ui_masks" in ch.data:
+            for m in ch.data["character_ui_masks"]:
+                if m["modifier"] in ch.data["body_object"].modifiers:
+                    ch.data["body_object"].modifiers[m["modifier"]].driver_remove("show_viewport")
+                    ch.data["body_object"].modifiers[m["modifier"]].driver_remove("show_render")
     
     @classmethod
     def remove_body_shape_keys_drivers(self, ch):
         "removes drivers from shape keys"
-        for s in ch.data["character_ui_shape_keys"]:
-            if s["shape_key"] < len(ch.data["body_object"].data.shape_keys.key_blocks):
-                ch.data["body_object"].data.shape_keys.key_blocks[s["shape_key"]].driver_remove("value")
+        if "character_ui_shape_keys" in ch.data:
+            for s in ch.data["character_ui_shape_keys"]:
+                if s["shape_key"] in ch.data["body_object"].data.shape_keys.key_blocks:
+                    ch.data["body_object"].data.shape_keys.key_blocks[s["shape_key"]].driver_remove("value")
 
     @classmethod
     def ui_build_outfit_buttons(self, ch, key):
@@ -107,7 +109,7 @@ class CharacterUI(PropertyGroup):
                     if ch.data["body_object"]:
                         body = ch.data["body_object"]
                         for shape_key in ch.data["character_ui_shape_keys"]:
-                            if shape_key["driver_id"] == o and len(body.data.shape_keys.key_blocks) > shape_key["shape_key"]:
+                            if shape_key["driver_id"] == o and shape_key["shape_key"] in body.data.shape_keys.key_blocks:
                                 CharacterUIUtils.create_driver(o, body.data.shape_keys.key_blocks[shape_key["shape_key"]], "value", "chui_object==0", [{"name": "chui_object", "path":"hide_render" }] )
 
             index += 1
@@ -346,7 +348,7 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
     bl_idname = "VIEW3D_PT_rig_layers_"
     
     @classmethod
-    def poll(slef, context):
+    def poll(self, context):
         ch = CharacterUIUtils.get_character()
         if rig_layers_key not in ch.data:
             return False
