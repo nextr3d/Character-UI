@@ -23,7 +23,6 @@ class OPS_OT_AddNewAttribute(Operator):
                 return {'FINISHED'}
 
             path = context.window_manager.clipboard
-            prop = context.button_prop
             
             name=path[:path.rindex('.')]+".name"
             try:
@@ -32,39 +31,43 @@ class OPS_OT_AddNewAttribute(Operator):
                 name = False
             rig_id = ch.data[context.scene.character_ui_object_id]
             attributes_key = "CharacterUI_att_%s"%(rig_id)
-            if attributes_key in ch:
-                arr = []
-                if self.parent_path:
+            if self.parent_path not in ["", " "]: #syncing attribtues
+                driver_id = eval(self.parent_path[:self.parent_path.index(']')+1])
+                driver_id_path = self.parent_path[self.parent_path.index(']')+2:]
+                driver_path = path[path.rindex('.')+1:]
+                prop = eval(path[:path.rindex('.')])
+                parent_prop = eval(self.parent_path[:self.parent_path.rindex(".")])
+
+                print(parent_prop.bl_rna, prop.bl_rna)
+                if parent_prop.bl_rna == prop.bl_rna:
+                    CharacterUIAttributesOperatorsUtils.create_driver(driver_id, prop, driver_path, "chui_value", [{"name": "chui_value", "path":driver_id_path}])
+                    name = "Default Value"
                     for g in ch[attributes_key][self.panel_name]:
                         if g["name"] == self.group_name:
-                            arr = g["attributes"]
-                            if self.parent_path:
-                                arr = sync_attribute_to_parent(arr, self.parent_path, path)
-                            else:
-                                try:
-                                    arr.append({'path': path, 'name':name})
-                                except:
-                                    arr = []
-                                    arr.append({'path': path, 'name':name})
-                            g["attributes"] = arr
+                            for att in g["attributes"]:
+                                if att["path"] == self.parent_path:
+                                    if hasattr(att["synced"], "append"):
+                                        synced = att["synced"]
+                                        synced.append(path)
+                                        att["synced"] = synced
+                                    else:
+                                        att["synced"] = [path]
+                                    if att["name"]:
+                                        name = att["name"]
+                    self.report({"INFO"}, "Synced %s to %s"%(prop.name, name))
                 else:
-                    for g in ch[attributes_key][self.panel_name]:
-                        if g["name"] == self.group_name:
-                            try:
-                                att = g["attributes"].to_list()
-                                att.append({'path': path, 'name':name})
-                                g["attributes"] = att
-                            except:
-                                att = g["attributes"]
-                                att.append({'path': path, 'name':name})
-                                g["attributes"] = att
-                
-                if name:
-                    self.report({'INFO'}, 'Added attribute '+ name +' to '+ch.name)
-                else:
-                    self.report({'INFO'}, 'Added attribute to '+ch.name)
-            else:
-                self.report({'WARNING'}, ch.name + ' is not UI enabled! You must enable it first.')
+                    self.report({"ERROR"}, "Attributes have different data types!")
+                    return{"CANCELLED"}
+            else: #adding new attribute
+                for g in ch[attributes_key][self.panel_name]:
+                    if g["name"] == self.group_name:
+                        if hasattr(g["attributes"], "append"):
+                            att = g["attributes"]
+                            att.append({"name": name, "path": path, "synced": []})
+                            g["attributes"] = att
+                        else:
+                            g["attributes"] = [{"name": name, "path": path, "synced": []}]
+
         self.panel_name = ""
         self.parent_path = ""
         return {'FINISHED'}
@@ -129,7 +132,46 @@ class OPS_OT_AttributeChangePosition(Operator):
                             att[i] = next
                             self.report({'INFO'}, "Moved attribute down in the list")
                         g["attributes"] = att
-        return {'FINISHED'}   
+        return {'FINISHED'}
+
+class CharacterUIAttributesOperatorsUtils():
+    @staticmethod
+    def create_driver(driver_id, driver_target, driver_path, driver_expression, variables):
+       
+        driver_target.driver_remove(driver_path)
+        driver = driver_target.driver_add(driver_path)
+
+        def setup_driver(driver, addition_path = ""):
+            driver.type = "SCRIPTED"
+            driver.expression = driver_expression
+            for variable in variables:
+                var = driver.variables.new()
+                var.name = variable["name"]
+                var.targets[0].id_type = driver_id.rna_type.name.upper()
+                var.targets[0].id = variable["driver_id"] if "driver_id" in variable else driver_id
+                var.targets[0].data_path = "%s%s"%(variable["path"], addition_path)
+        print(type(driver))
+        if type(driver) == list:
+            for d in enumerate(driver):
+                setup_driver(d[1].driver,"[%i]"%(d[0]))
+        else:
+            setup_driver(driver.driver)
+    @staticmethod
+    def sync_attribute_to_parent(attributes, parent_path, path, prop):
+        "adds data path "
+        for i in range(len(attributes)):
+            if attributes[i]['path'] == parent_path:
+                if 'synced' in attributes[i]:
+                    syn = attributes[i]['synced'] #this thing is so unnecessary but I couldn't find a better solution, no matter what I did I couldn't add new attributes
+                    if not syn:
+                        syn = []
+                    syn.append({"path": path, "prop": prop})
+                    attributes[i]['synced'] = syn
+                else:
+                    syn = [] #here is it the same as few lines up
+                    syn.append({"path": path, "prop": prop})
+                    attributes[i]['synced'] = syn
+        return attributes
 classes = [
     OPS_OT_AddNewAttribute,
     OPS_OT_RemoveAttribute,
