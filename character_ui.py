@@ -12,7 +12,7 @@ links_key
 """
 #script variables
 custom_prefix = "CharacterUI_"
-
+attributes_key = "%satt_%s"%(custom_prefix, character_id)
 
 bl_info = {
     "name": "Character UI",
@@ -131,7 +131,6 @@ class CharacterUI(PropertyGroup):
         
         def recursive_hair(hair_items, index = -1):
             for i in enumerate(hair_items):
-                print(i)
                 if hasattr(i[1], "type"):
                     create_hair_drivers(i[1], i[0] if index < 0 else index)
                 else:
@@ -226,7 +225,6 @@ class CharacterUIUtils:
                 var.targets[0].id_type = driver_id.rna_type.name.upper()
                 var.targets[0].id = variable["driver_id"] if "driver_id" in variable else driver_id
                 var.targets[0].data_path = "%s%s"%(variable["path"], addition_path)
-        print(type(driver))
         if type(driver) == list:
             for d in enumerate(driver):
                 setup_driver(d[1].driver,"[%i]"%(d[0]))
@@ -270,6 +268,34 @@ class CharacterUIUtils:
                     child_name = child.name.replace(" ", "_")+"_outfit_toggle"
                     if hasattr(props, child_name):
                         CharacterUIUtils.render_outfit_piece(child, settings_box, props, True)
+    @staticmethod
+    def render_attributes(layout, groups, panel_name):
+        for g in groups:
+            box = layout.box()
+            header_row = box.row(align=True)
+            expanded_op = header_row.operator(OPS_OT_ExpandAttributeGroup.bl_idname, emboss=False, text="",icon="TRIA_DOWN" if g["expanded"] else "TRIA_RIGHT" )
+            expanded_op.panel_name = panel_name
+            expanded_op.group_name = g["name"]
+            header_row.label(text=g["name"].replace("_", " "))
+            if g["expanded"]:
+                for a in g["attributes"]:
+                    row = box.row(align=True)
+                    delimiter = '][' if '][' in a['path'] else '.'
+                    offset = 1 if '][' in a['path'] else 0
+                    prop = a['path'][a['path'].rindex(delimiter)+1:]
+                    path = a['path'][:a['path'].rindex(delimiter)+offset]
+                    if a['name']:
+                        try:
+                            row.prop(eval(path), prop, text=a['name'])
+                        except:
+                            print("couldn't render ", path, " prop")
+                    else:
+                        try:
+                            row.prop(eval(path), prop)
+                        except:
+                            print("couldn't render ", path, " prop")
+
+
 class VIEW3D_PT_characterUI(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -319,6 +345,11 @@ class VIEW3D_PT_outfits(VIEW3D_PT_characterUI):
                         box.label(text=n)
                         for p in  pcs:
                             CharacterUIUtils.render_outfit_piece(p, box, props)
+            if attributes_key in ch:
+                if "outfits" in ch[attributes_key]:
+                    attributes_box = layout.box()
+                    attributes_box.label(text="Attributes")
+                    CharacterUIUtils.render_attributes(attributes_box, ch[attributes_key]["outfits"], "outfits")
 
 class VIEW3D_PT_body(VIEW3D_PT_characterUI):
     "Body panel"
@@ -327,14 +358,19 @@ class VIEW3D_PT_body(VIEW3D_PT_characterUI):
 
     def draw(self, context):
         layout = self.layout
-        if CharacterUIUtils.get_character():
+        ch = CharacterUIUtils.get_character()
+        if ch:
             box = layout.box()
             props = CharacterUIUtils.get_props_from_character()
             hair_row = box.row(align=True)
             CharacterUIUtils.safe_render(hair_row, props, "hair_enum")
             if hasattr(props, "hair_lock"):
                 CharacterUIUtils.safe_render(hair_row, props, "hair_lock", icon="LOCKED" if props.hair_lock else "UNLOCKED", toggle=True )
-
+            if attributes_key in ch:
+                if "body" in ch[attributes_key]:
+                    attributes_box = layout.box()
+                    attributes_box.label(text="Attributes")
+                    CharacterUIUtils.render_attributes(attributes_box, ch[attributes_key]["body"], "body")
         
 class VIEW3D_PT_physics_panel(VIEW3D_PT_characterUI):
     "Physics Sub-Panel"
@@ -358,6 +394,11 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
     @classmethod
     def poll(self, context):
         ch = CharacterUIUtils.get_character()
+        
+        if attributes_key in ch:
+            if "rig" in ch[attributes_key]:
+                return True
+
         if rig_layers_key not in ch.data:
             return False
         return ch and ch.type == "ARMATURE" and len(ch.data[rig_layers_key])
@@ -390,6 +431,11 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
                         current_row_index = rig_layer['row']
                         row = box.row()
                     row.prop(ch.data, "layers", index=rig_layer['index'], toggle=True, text=rig_layer['name'])
+            if attributes_key in ch:
+                if "rig" in ch[attributes_key]:
+                    attributes_box = layout.box()
+                    attributes_box.label(text="Attributes")
+                    CharacterUIUtils.render_attributes(attributes_box, ch[attributes_key]["rig"], "rig")
 
 class VIEW3D_PT_links(VIEW3D_PT_characterUI):
     bl_label = "Links"
@@ -412,7 +458,27 @@ class VIEW3D_PT_links(VIEW3D_PT_characterUI):
                         column.operator("wm.url_open", text=link, icon=data[links_key][section][link][0]).url = data[links_key][section][link][1]
                     except:
                         column.operator("wm.url_open", text=link).url = data[links_key][section][link][1]
+class OPS_OT_ExpandAttributeGroup(Operator):
+    "Expands or Contracts attribute group"
+    bl_idname = "character_ui_script.expand_attribute_group"
+    bl_label = "Expand/Contract"
+    bl_description = "Expands or Contracts Attribute Group"
 
+    panel_name : StringProperty()
+    group_name : StringProperty()
+
+    def execute(self, context):
+        ch = CharacterUIUtils.get_character()
+        if ch:
+            if attributes_key in ch:
+                if self.panel_name in ch[attributes_key]:
+                    for i in range(len(ch[attributes_key][self.panel_name])):
+                        g = ch[attributes_key][self.panel_name][i] 
+                        if g["name"] == self.group_name:
+                            g["expanded"] = not g["expanded"]
+                        ch[attributes_key][self.panel_name][i] = g
+
+        return {'FINISHED'}
 
 classes = [
     VIEW3D_PT_outfits,
@@ -420,6 +486,7 @@ classes = [
     VIEW3D_PT_body,
     VIEW3D_PT_physics_panel,
     VIEW3D_PT_links,
+    OPS_OT_ExpandAttributeGroup,
     CharacterUI
 ]
 
