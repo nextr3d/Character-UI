@@ -137,7 +137,7 @@ class OPS_OT_AttributeChangePosition(Operator):
 class CharacterUIAttributesOperatorsUtils():
     @staticmethod
     def create_driver(driver_id, driver_target, driver_path, driver_expression, variables):
-       
+        "TODO: same exact code is in the add-on, make it that it's only once in the whole codebase"
         driver_target.driver_remove(driver_path)
         driver = driver_target.driver_add(driver_path)
 
@@ -172,10 +172,52 @@ class CharacterUIAttributesOperatorsUtils():
                     syn.append({"path": path, "prop": prop})
                     attributes[i]['synced'] = syn
         return attributes
+
+class OPS_OT_EditAttribute(Operator):
+    bl_idname = "character_ui.edit_attribute"
+    bl_label = 'Edit attribute'
+    bl_description = 'Edit attribute' 
+
+    path : StringProperty(name="Path", description="RNA path of the attribute")
+    panel_name : StringProperty()
+    group_name : StringProperty()
+    attribute_name : StringProperty(name="Name")
+
+    def invoke(self, context, event):
+        ch = context.scene.character_ui_object
+        rig_id = ch.data[context.scene.character_ui_object_id]
+        attributes_key = "CharacterUI_att_%s"%(rig_id)
+        if attributes_key in ch:
+            if self.panel_name in ch[attributes_key]:
+                for g in ch[attributes_key][self.panel_name]:
+                    if self.group_name == g["name"]:
+                        for att in g["attributes"]:
+                            if att["path"] == self.path:
+                               self.attribute_name = att["name"] if att["name"] else "Default Value"
+                                  
+        return context.window_manager.invoke_props_dialog(self, width=750)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "attribute_name")
+    def execute(self, context):
+        ch = context.scene.character_ui_object
+        rig_id = ch.data[context.scene.character_ui_object_id]
+        attributes_key = "CharacterUI_att_%s"%(rig_id)
+        if attributes_key in ch:
+            if self.panel_name in ch[attributes_key]:
+                for g in ch[attributes_key][self.panel_name]:
+                    if self.group_name == g["name"]:
+                        for att in g["attributes"]:
+                            if att["path"] == self.path:
+                                if self.attribute_name not in ["", " "]:
+                                    att["name"] = self.attribute_name
+        return{"FINISHED"}
 classes = [
     OPS_OT_AddNewAttribute,
     OPS_OT_RemoveAttribute,
-    OPS_OT_AttributeChangePosition
+    OPS_OT_AttributeChangePosition,
+    OPS_OT_EditAttribute
 ]
 def register():
     for c in classes:

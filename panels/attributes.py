@@ -143,10 +143,10 @@ class CharacterUIAttributesUtils:
                                     row.prop(eval(path), prop)
                                 except:
                                     continue
-                            # op_edit = row.operator(OPS_OT_EditAttribute.bl_idname, icon="PREFERENCES", text="")
-                            # op_edit.path = p["path"]
-                            # op_edit.panel_name = panel_name
-                            # op_edit.group_name = g["name"]
+                            op_edit = row.operator("character_ui.edit_attribute", icon="PREFERENCES", text="")
+                            op_edit.path = p["path"]
+                            op_edit.panel_name = panel_name
+                            op_edit.group_name = g["name"]
 
                             op_up = row.operator("character_ui.attribute_change_position", icon="TRIA_UP", text="")
                             op_up.direction = True

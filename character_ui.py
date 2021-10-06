@@ -213,17 +213,25 @@ class CharacterUIUtils:
 
     @staticmethod
     def create_driver(driver_id,driver_target, driver_path, driver_expression, variables):
-       
+        "TODO: same exact code is in the add-on, make it that it's only once in the whole codebase"
         driver_target.driver_remove(driver_path)
         driver = driver_target.driver_add(driver_path)
-        driver = driver.driver
-        driver.type = "SCRIPTED"
-        driver.expression = driver_expression
-        for variable in variables:
-            var = driver.variables.new()
-            var.name = variable["name"]
-            var.targets[0].id = variable["driver_id"] if "driver_id" in variable else driver_id
-            var.targets[0].data_path = variable["path"]
+
+        def setup_driver(driver, addition_path = ""):
+            driver.type = "SCRIPTED"
+            driver.expression = driver_expression
+            for variable in variables:
+                var = driver.variables.new()
+                var.name = variable["name"]
+                var.targets[0].id_type = driver_id.rna_type.name.upper()
+                var.targets[0].id = variable["driver_id"] if "driver_id" in variable else driver_id
+                var.targets[0].data_path = "%s%s"%(variable["path"], addition_path)
+        print(type(driver))
+        if type(driver) == list:
+            for d in enumerate(driver):
+                setup_driver(d[1].driver,"[%i]"%(d[0]))
+        else:
+            setup_driver(driver.driver)
         
         
     @staticmethod
