@@ -415,7 +415,8 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
             if ch == context.active_object:
                 if attributes_key in ch:
                     if "rig" in ch[attributes_key]:
-                        return True
+                        if len(ch[attributes_key]["rig"]):
+                            return True
 
                 if rig_layers_key in ch.data:
                     if type(ch.data[rig_layers_key]) == list:
@@ -457,6 +458,30 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
                     attributes_box = self.layout.box()
                     attributes_box.label(text="Attributes")
                     CharacterUIUtils.render_attributes(attributes_box, ch[attributes_key]["rig"], "rig")
+class VIEW3D_PT_miscellaneous(VIEW3D_PT_characterUI):
+    "Panel for things which don't belong anywhere"
+    bl_label = "Miscellaneous"
+    bl_idname = "VIEW3D_PT_miscellaneous"
+    
+    @classmethod
+    def poll(self, context):
+        ch = CharacterUIUtils.get_character()
+        if ch:
+            if ch == context.active_object:
+                if attributes_key in ch:
+                    if "misc" in ch[attributes_key]:
+                        if len(ch[attributes_key]["misc"]):
+                            return True
+        return False
+
+    def draw(self, context):
+        layout = self.layout
+        ch = CharacterUIUtils.get_character()
+        if attributes_key in ch:
+            if "misc" in ch[attributes_key]:
+                attributes_box = self.layout.box()
+                attributes_box.label(text="Attributes")
+                CharacterUIUtils.render_attributes(attributes_box, ch[attributes_key]["misc"], "misc")
 
 class VIEW3D_PT_links(VIEW3D_PT_characterUI):
     bl_label = "Links"
@@ -465,8 +490,6 @@ class VIEW3D_PT_links(VIEW3D_PT_characterUI):
     def draw(self, context):
         layout = self.layout
         layout.separator()
-        layout.label(text='Nextr Rig UI v'+str(bl_info['version'][0])+'.'+str(
-            bl_info['version'][1])+'.'+str(bl_info['version'][2]), icon='SETTINGS')
         col = layout.column()
         data = CharacterUIUtils.get_character().data
         if links_key in data:
@@ -479,6 +502,9 @@ class VIEW3D_PT_links(VIEW3D_PT_characterUI):
                         column.operator("wm.url_open", text=link, icon=data[links_key][section][link][0]).url = data[links_key][section][link][1]
                     except:
                         column.operator("wm.url_open", text=link).url = data[links_key][section][link][1]
+        layout.label(text='Character-UI v%s'%(".".join(str(i) for i in bl_info["version"])), icon='SETTINGS')
+        layout.operator("wm.url_open", text="UI bugs/suggestions").url = "https://github.com/nextr3d/Character-UI/issues/new/choose"
+        layout.operator("wm.url_open", text="Download Character-UI add-on").url = "https://github.com/nextr3d/Character-UI"
 class OPS_OT_ExpandAttributeGroup(Operator):
     "Expands or Contracts attribute group"
     bl_idname = "character_ui_script.expand_attribute_group"
@@ -509,6 +535,7 @@ panels = [
     VIEW3D_PT_rig_layers,
     VIEW3D_PT_body,
     VIEW3D_PT_physics_panel,
+    VIEW3D_PT_miscellaneous,
     VIEW3D_PT_links
 ]
 operators = [
