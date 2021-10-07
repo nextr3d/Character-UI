@@ -11,6 +11,7 @@ class CharacterUIMainUpdates:
             CharacterUIMainUpdates.update_character_ui_object_collections(context, o)
             CharacterUIMainUpdates.update_character_ui_object_rig_layers(context, o)
             context.scene.character_ui_object_body = o.data["body_object"]
+            context.scene.character_ui_custom_label = o.name
         else:
             context.scene.character_ui_object_body = None
 

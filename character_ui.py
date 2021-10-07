@@ -9,6 +9,7 @@ character_id
 character_id_key
 rig_layers_key
 links_key
+custom_label
 """
 #script variables
 custom_prefix = "CharacterUI_"
@@ -21,7 +22,6 @@ bl_info = {
     "version": (5, 0, 0),
     "blender": (3, 0, 0)
 }
-
 class CharacterUI(PropertyGroup):
     @staticmethod
     def initialize():
@@ -273,10 +273,14 @@ class CharacterUIUtils:
         for g in groups:
             box = layout.box()
             header_row = box.row(align=True)
-            expanded_op = header_row.operator(OPS_OT_ExpandAttributeGroup.bl_idname, emboss=False, text="",icon="TRIA_DOWN" if g["expanded"] else "TRIA_RIGHT" )
+            expanded_op = header_row.operator("character_ui_script.expand_attribute_group_%s"%(character_id.lower()), emboss=False, text="",icon="TRIA_DOWN" if g["expanded"] else "TRIA_RIGHT" )
             expanded_op.panel_name = panel_name
             expanded_op.group_name = g["name"]
-            header_row.label(text=g["name"].replace("_", " "))
+            try:
+                header_row.label(text=g["name"].replace("_", " "), icon=g["icon"])
+            except:
+                header_row.label(text=g["name"].replace("_", " "))
+
             if g["expanded"]:
                 for a in g["attributes"]:
                     row = box.row(align=True)
@@ -294,22 +298,35 @@ class CharacterUIUtils:
                             row.prop(eval(path), prop)
                         except:
                             print("couldn't render ", path, " prop")
+    @staticmethod
+    def create_unique_ids(panels, operators):
+        for p in panels:
+            unique_panel = type(
+                "%s_%s"%(p.bl_idname, character_id)
+                ,(p,)
+                ,{'bl_idname': "%s_%s"%(p.bl_idname, character_id), 'bl_label': p.bl_label, 'bl_parent_id': "%s_%s"%(p.bl_parent_id, character_id) if hasattr(p, "bl_parent_id") else ""}
+	            )   
+            register_class(unique_panel)
+        for o in operators:
+            name = "%s_%s"%(o.bl_idname, character_id.lower())
+            unique_operator = type(name,(o,),{"bl_idname": name})
+            register_class(unique_operator)
 
 
 class VIEW3D_PT_characterUI(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Character UI"
+    bl_category = custom_label
 
     @classmethod
     def poll(self, context):
         ch = CharacterUIUtils.get_character()
-        return ch and ch == context.object
+        if ch:
+            return ch == context.object
+        return False
 
 class VIEW3D_PT_outfits(VIEW3D_PT_characterUI):
     bl_label = "Outfits"
-    """no idea if this is the correct way but classes with identical ids get destroyed 
-    so this way multiple classes with same(or at least similar) functionality can exist at the same time"""
     bl_idname = "VIEW3D_PT_outfits"
 
     def draw(self, context):
@@ -389,51 +406,55 @@ class VIEW3D_PT_physics_panel(VIEW3D_PT_characterUI):
 
 class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
     bl_label = "Rig"
-    bl_idname = "VIEW3D_PT_rig_layers_"
+    bl_idname = "VIEW3D_PT_rig_layers"
     
     @classmethod
     def poll(self, context):
         ch = CharacterUIUtils.get_character()
-        
-        if attributes_key in ch:
-            if "rig" in ch[attributes_key]:
-                return True
+        if ch:
+            if ch == context.active_object:
+                if attributes_key in ch:
+                    if "rig" in ch[attributes_key]:
+                        return True
 
-        if rig_layers_key not in ch.data:
-            return False
-        return ch and ch.type == "ARMATURE" and len(ch.data[rig_layers_key])
+                if rig_layers_key in ch.data:
+                    if type(ch.data[rig_layers_key]) == list:
+                        return len(ch.data[rig_layers_key])
+               
+        return False
 
     def draw(self, context):
         box = self.layout.column().box()
-        box.label(text="Layers")
         ch = CharacterUIUtils.get_character() 
         if ch:
             if rig_layers_key in ch.data:
                 #sorting "stolen" from CloudRig https://gitlab.com/blender/CloudRig/-/blob/a16df00d5da51d19f720f3e5fe917a84a85883a0/generation/cloudrig.py
                 layer_data = ch.data[rig_layers_key]
-                rig_layers = [dict(l) for l in layer_data]
+                if type(layer_data) == list:
+                    box.label(text="Layers")
+                    rig_layers = [dict(l) for l in layer_data]
+                
+                    for i, l in enumerate(rig_layers):
+                        # When the Rigify addon is not enabled, finding the original index after sorting is impossible, so just store it.
+                        l['index'] = i
+                        if 'row' not in l:
+                            l['row'] = 1
 
-                for i, l in enumerate(rig_layers):
-                    # When the Rigify addon is not enabled, finding the original index after sorting is impossible, so just store it.
-                    l['index'] = i
-                    if 'row' not in l:
-                        l['row'] = 1
-
-                sorted_layers = sorted(rig_layers, key=lambda l: l['row'])
-                sorted_layers = [l for l in sorted_layers if 'name' in l and l['name']!=" "]
-                current_row_index = -1
-                row = box.row()
-                for rig_layer in sorted_layers:
-                    if rig_layer['name'] in ["", " "]: continue
-                    if rig_layer['name'].startswith("$"): continue
-                    
-                    if rig_layer['row'] > current_row_index:
-                        current_row_index = rig_layer['row']
-                        row = box.row()
-                    row.prop(ch.data, "layers", index=rig_layer['index'], toggle=True, text=rig_layer['name'])
+                    sorted_layers = sorted(rig_layers, key=lambda l: l['row'])
+                    sorted_layers = [l for l in sorted_layers if 'name' in l and l['name']!=" "]
+                    current_row_index = -1
+                    row = box.row()
+                    for rig_layer in sorted_layers:
+                        if rig_layer['name'] in ["", " "]: continue
+                        if rig_layer['name'].startswith("$"): continue
+                        
+                        if rig_layer['row'] > current_row_index:
+                            current_row_index = rig_layer['row']
+                            row = box.row()
+                        row.prop(ch.data, "layers", index=rig_layer['index'], toggle=True, text=rig_layer['name'])
             if attributes_key in ch:
                 if "rig" in ch[attributes_key]:
-                    attributes_box = layout.box()
+                    attributes_box = self.layout.box()
                     attributes_box.label(text="Attributes")
                     CharacterUIUtils.render_attributes(attributes_box, ch[attributes_key]["rig"], "rig")
 
@@ -481,27 +502,31 @@ class OPS_OT_ExpandAttributeGroup(Operator):
         return {'FINISHED'}
 
 classes = [
+    CharacterUI
+]
+panels = [
     VIEW3D_PT_outfits,
     VIEW3D_PT_rig_layers,
     VIEW3D_PT_body,
     VIEW3D_PT_physics_panel,
-    VIEW3D_PT_links,
-    OPS_OT_ExpandAttributeGroup,
-    CharacterUI
+    VIEW3D_PT_links
+]
+operators = [
+    OPS_OT_ExpandAttributeGroup
 ]
 
 def register():
     for c in classes:
         register_class(c)
 
+    bpy.app.handlers.load_post.append(CharacterUIUtils.create_unique_ids(panels, operators))
     setattr(bpy.types.Object, "%s%s"%(custom_prefix, character_id), bpy.props.PointerProperty(type=CharacterUI))
 
     CharacterUI.initialize()
 
 def unregister():
     for c in reversed(classes):
-        unregister_class(c)
-    
+        unregister_class(c) 
     delattr(bpy.types.Object, "%s%s"%(custom_prefix, character_id))
 if __name__ in ['__main__', 'builtins']:
     # __main__ when executed through the editor

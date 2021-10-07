@@ -53,6 +53,9 @@ def load_ui_script(context, character_id, character_id_key, rig_layers_key):
             text.write("character_id=\"%s\"\n"%(character_id))
             text.write("rig_layers_key=\"%s\"\n"%(rig_layers_key))
             text.write("links_key=\"%s\"\n"%(context.scene.character_ui_links_key))
+            text.write("custom_label=\"%s\"\n"%(context.scene.character_ui_custom_label))
+
+
 
     readfile.close()
 

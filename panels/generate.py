@@ -33,6 +33,7 @@ class VIEW3D_PT_character_ui_generate(Panel):
             o = context.scene.character_ui_object
             box.label(text="Generate UI for %s"%(o.name))
             box.prop(context.scene, "character_ui_object_id")
+            box.prop(context.scene, "character_ui_custom_label")
             row = box.row()
             row.operator(OPS_OT_GenerateID.bl_idname)
             if context.scene.character_ui_object_id in o.data:
@@ -55,6 +56,10 @@ def register():
         name = "Custom Property Name",
         description = "Custom Property used for storing the Character UI ID, if your character has a unique ID you can use it too",
         default = "character_id",
+    )
+    bpy.types.Scene.character_ui_custom_label = StringProperty(
+        name = "Label",
+        description = "Text used as the label for the tab in the Sidebar"
     )
     for c in classes:
         register_class(c)
