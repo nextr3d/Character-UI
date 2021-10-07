@@ -1,20 +1,17 @@
 # Character-UI
-Blender UI for you rigs
+Blender add-on for creating beautiful yet useful menus located in the Sidebar.
 
-These simple scripts allow you to create very nice and clean looking UI for your characters.
+### Installation
 
-Download the template file to see it in an action. If you are not sure how to set it up refer to the 
-[wiki](https://github.com/nextr3d/Character-UI/wiki/Nextr-Rig-UI)
- which covers most of the options.
+Download the whole repository as a ZIP file if you want the newest version [or get the newest stable version from the Releases page](https://github.com/nextr3d/Character-UI/releases/) and install it as a normal add-on in Blender Preferences
 
+![install](https://i.imgur.com/wx7GDAn.png)
 
- ### Debugger
+### Usage
+You will find the add-on in the Sidebar, if hidden press **N** in the 3D Viewport and locate the **Character-UI** tab
+![panel](https://imgur.com/yqzoCnB.png)
 
- The other script is another UI which helps you to build the main UI. It requires no set up and it should help you with for example the structure of the blend file, adding attributes or naming rig layers.
-
- For more in depth look refer to the [wiki](https://github.com/nextr3d/Character-UI/wiki/Nextr-Rig-UI-Debugger) .
-
-
+**[For detailed guide on how to use the add-on read the wiki](https://github.com/nextr3d/Character-UI/wiki)**
  ## Issues
 
- If you find a bug or have a feature in mind I should add feel free to add a new issue.
+ If you find a bug or have a feature in mind I should add feel free to [add a new issue](https://github.com/nextr3d/Character-UI/issues/new/choose).
