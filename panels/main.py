@@ -71,15 +71,20 @@ class VIEW3D_PT_character_ui_main(Panel):
         layout = self.layout
         box = layout.box()
         box.prop(context.scene, "character_ui_object")
-        if context.scene.character_ui_object.type != "ARMATURE":
-            box.label(text="Object is not an armature", icon="ERROR")
-        collections = box.box()
-        collections.label(text="Collections")
-        collections.prop(context.scene, "character_ui_outfits_collection")
-        collections.prop(context.scene, "character_ui_hair_collection")
-        objects = box.box()
-        objects.label(text="Objects")
-        objects.prop(context.scene, "character_ui_object_body")
+        ch = context.scene.character_ui_object
+        if ch:
+            if ch != "ARMATURE":
+                box.label(text="Object is not an armature", icon="ERROR")
+            if context.scene.character_ui_object_id in ch.data:
+                collections = box.box()
+                collections.label(text="Collections")
+                collections.prop(context.scene, "character_ui_outfits_collection")
+                collections.prop(context.scene, "character_ui_hair_collection")
+                objects = box.box()
+                objects.label(text="Objects")
+                objects.prop(context.scene, "character_ui_object_body")
+            else:
+                box.label(text="You must generate the ID first before you can continue!", icon="ERROR")
 
 def register():
     bpy.types.Scene.character_ui_object = PointerProperty(
