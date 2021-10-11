@@ -27,7 +27,6 @@ class OPS_OT_UseAsMask(Operator):
     def execute(self, context):
         ch = context.scene.character_ui_object
         if ch:
-            new_masks = []
             found = False
             outfit_piece = context.scene.character_ui_mask_outfit_piece
             if "character_ui_masks" not in ch.data:
@@ -37,7 +36,11 @@ class OPS_OT_UseAsMask(Operator):
                     item["driver_id"] = outfit_piece 
                     found = True
             if not found:
-                masks = ch.data["character_ui_masks"].to_list()
+                masks = []
+                try:
+                    masks = ch.data["character_ui_masks"].to_list()
+                except:
+                    masks = ch.data["character_ui_masks"]
                 masks.append({"modifier": self.modifier, "driver_id": outfit_piece})
                 ch.data["character_ui_masks"] = masks
         return {"FINISHED"}
