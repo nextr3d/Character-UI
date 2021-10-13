@@ -22,9 +22,10 @@ class OPS_OT_GenerateScript(Operator):
         if self.character_id:
             text = load_ui_script(context,self.character_id, self.character_id_key, self.rig_layers_key)
             for o in bpy.data.objects:
-                if self.character_id_key in o.data:
-                    if o.data[self.character_id_key] == self.character_id:
-                        o.data["character_ui_textfile"] = text
+                if str(type(o.data)) != "<class 'NoneType'>":
+                    if self.character_id_key in o.data:
+                        if o.data[self.character_id_key] == self.character_id:
+                            o.data["character_ui_textfile"] = text
             self.report({"INFO"}, "Generated script")
         else:
             self.report({"ERROR"}, "You need to generate rig id!")

@@ -201,9 +201,10 @@ class CharacterUIUtils:
     @staticmethod
     def get_character():
         for o in bpy.data.objects:
-            if character_id_key in o.data:
-                if o.data[character_id_key] == character_id:
-                    return o
+            if str(type(o.data)) != "<class 'NoneType'>": #empties...
+                if character_id_key in o.data:
+                    if o.data[character_id_key] == character_id:
+                        return o
         return False
     @staticmethod
     def get_props_from_character():
