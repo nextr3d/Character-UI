@@ -20,16 +20,22 @@ class CharacterUIMainUpdates:
             outfits = None
             hair = None
             body = None
+            physics = None
+
             if "hair_collection" in o.data:
                 hair = o.data["hair_collection"]
             if "outfits_collection" in o.data:
                 outfits = o.data["outfits_collection"]
             if "body_object" in o.data:
                 body = o.data["body_object"]
+            if "character_ui_cages" in o.data:
+                if "collection" in o.data["character_ui_cages"]:
+                    physics = o.data["character_ui_cages"]["collection"]
 
             context.scene.character_ui_hair_collection = hair
             context.scene.character_ui_outfits_collection = outfits
             context.scene.character_ui_object_body = body
+            context.scene.character_ui_physics_collection = physics
     @staticmethod
     def update_character_ui_object_rig_layers(context, o):
         key = context.scene.character_ui_rig_layers_key
@@ -73,7 +79,7 @@ class VIEW3D_PT_character_ui_main(Panel):
         box.prop(context.scene, "character_ui_object")
         ch = context.scene.character_ui_object
         if ch:
-            if ch != "ARMATURE":
+            if ch.type != "ARMATURE":
                 box.label(text="Object is not an armature", icon="ERROR")
             if context.scene.character_ui_object_id in ch.data:
                 collections = box.box()

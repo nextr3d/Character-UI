@@ -2,6 +2,7 @@ from . import main
 from . import body
 from . import rig_layers
 from . import attributes
+from . import physics
 from . import miscellaneous
 from . import generate
 
@@ -11,6 +12,7 @@ modules = [
 	body,
 	rig_layers,
 	attributes,
+	physics,
 	miscellaneous,
 	generate
 ]

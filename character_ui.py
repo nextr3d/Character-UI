@@ -311,6 +311,27 @@ class CharacterUIUtils:
             name = "%s_%s"%(o.bl_idname, character_id.lower())
             unique_operator = type(name,(o,),{"bl_idname": name})
             register_class(unique_operator)
+    
+    @staticmethod
+    def render_cages(layout, cages, panel = 1):
+        for c in cages:
+            if c[1] == "OP%i"%(panel):
+                for m in c[0].modifiers:
+                    if m.type == "CLOTH":
+                        box = layout.box()
+                        box.label(text=c[0].name)
+                        row = box.row(align=True)
+                        row.prop(m, "show_viewport")
+                        row.prop(m, "show_render")
+                        box.prop(m.point_cache, "frame_start")
+                        box.prop(m.point_cache, "frame_end")
+                        icon = "TRASH"
+                        text = "Delete Bake"
+                        if not m.point_cache.is_baked:
+                            icon = "PHYSICS"
+                            text = "Bake"
+                        box.operator("character_ui.bake_%s"%(character_id.lower()), text=text, icon=icon).object_name = c[0].name
+
 
 
 class VIEW3D_PT_characterUI(Panel):
@@ -367,6 +388,7 @@ class VIEW3D_PT_outfits(VIEW3D_PT_characterUI):
                     attributes_box = layout.box()
                     attributes_box.label(text="Attributes")
                     CharacterUIUtils.render_attributes(attributes_box, ch[attributes_key]["outfits"], "outfits")
+          
 
 class VIEW3D_PT_body(VIEW3D_PT_characterUI):
     "Body panel"
@@ -377,11 +399,10 @@ class VIEW3D_PT_body(VIEW3D_PT_characterUI):
         layout = self.layout
         ch = CharacterUIUtils.get_character()
         if ch:
-            box = layout.box()
             props = CharacterUIUtils.get_props_from_character()
-            hair_row = box.row(align=True)
+            hair_row = layout.row(align=True)
             CharacterUIUtils.safe_render(hair_row, props, "hair_enum")
-            if hasattr(props, "hair_lock"):
+            if hasattr(props, "hair_lock") and hasattr(props, "hair_enum"):
                 CharacterUIUtils.safe_render(hair_row, props, "hair_lock", icon="LOCKED" if props.hair_lock else "UNLOCKED", toggle=True )
             if attributes_key in ch:
                 if "body" in ch[attributes_key]:
@@ -389,20 +410,68 @@ class VIEW3D_PT_body(VIEW3D_PT_characterUI):
                     attributes_box.label(text="Attributes")
                     CharacterUIUtils.render_attributes(attributes_box, ch[attributes_key]["body"], "body")
         
-class VIEW3D_PT_physics_panel(VIEW3D_PT_characterUI):
+class VIEW3D_PT_physics_body_panel(VIEW3D_PT_characterUI):
     "Physics Sub-Panel"
-    bl_label = "Physics (Experimental)"
-    bl_idname = "VIEW3D_PT_physics_panel"
+    bl_label = "Physics"
+    bl_idname = "VIEW3D_PT_physics_body_panel"
     bl_parent_id = "VIEW3D_PT_body"
     
     @classmethod
     def poll(self, context):
+        ch = CharacterUIUtils.get_character()
+        if ch:
+            if "character_ui_cages" in ch.data:
+                if "cages" in ch.data["character_ui_cages"]:
+                    out = list(filter(lambda x: "OP2" in x, ch.data["character_ui_cages"]["cages"]))
+                    return len(out) > 0
+
         return False
     def draw(self, context):
         layout = self.layout
-        box = layout.box()
-        box.label(text="physics")
-        
+        ch = CharacterUIUtils.get_character()
+        CharacterUIUtils.render_cages(layout, ch.data["character_ui_cages"]["cages"], 2)
+
+class VIEW3D_PT_physics_outfits_panel(VIEW3D_PT_characterUI):
+    "Physics Sub-Panel"
+    bl_label = "Physics"
+    bl_idname = "VIEW3D_PT_physics_outfits_panel"
+    bl_parent_id = "VIEW3D_PT_outfits"
+
+    @classmethod
+    def poll(self, context):
+        ch = CharacterUIUtils.get_character()
+        if ch:
+            if "character_ui_cages" in ch.data:
+                if "cages" in ch.data["character_ui_cages"]:
+                    out = list(filter(lambda x: "OP1" in x, ch.data["character_ui_cages"]["cages"]))
+                    return len(out) > 0
+        return False
+    def draw(self, context):
+        layout = self.layout
+        ch = CharacterUIUtils.get_character()
+        CharacterUIUtils.render_cages(layout, ch.data["character_ui_cages"]["cages"], 1)
+
+class VIEW3D_PT_physics_misc_panel(VIEW3D_PT_characterUI):
+    "Physics Sub-Panel"
+    bl_label = "Physics"
+    bl_idname = "VIEW3D_PT_physics_misc_panel"
+    bl_parent_id = "VIEW3D_PT_miscellaneous"
+
+    @classmethod
+    def poll(self, context):
+        ch = CharacterUIUtils.get_character()
+        if ch:
+            if "character_ui_cages" in ch.data:
+                if "cages" in ch.data["character_ui_cages"]:
+                    out = list(filter(lambda x: "OP3" in x, ch.data["character_ui_cages"]["cages"]))
+                    return len(out) > 0
+        return False
+
+    def draw(self, context):
+        layout = self.layout
+        ch = CharacterUIUtils.get_character()
+        CharacterUIUtils.render_cages(layout, ch.data["character_ui_cages"]["cages"], 3)
+
 
 class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
     bl_label = "Rig"
@@ -505,6 +574,7 @@ class VIEW3D_PT_links(VIEW3D_PT_characterUI):
         layout.label(text='Character-UI v%s'%(".".join(str(i) for i in bl_info["version"])), icon='SETTINGS')
         layout.operator("wm.url_open", text="UI bugs/suggestions").url = "https://github.com/nextr3d/Character-UI/issues/new/choose"
         layout.operator("wm.url_open", text="Download Character-UI add-on").url = "https://github.com/nextr3d/Character-UI"
+
 class OPS_OT_ExpandAttributeGroup(Operator):
     "Expands or Contracts attribute group"
     bl_idname = "character_ui_script.expand_attribute_group"
@@ -527,6 +597,27 @@ class OPS_OT_ExpandAttributeGroup(Operator):
 
         return {'FINISHED'}
 
+class OPS_PT_BakePhysics(bpy.types.Operator):
+    bl_idname = "character_ui.bake"
+    bl_description = "Bake Physics"
+    bl_label = "Bake"
+
+    object_name: bpy.props.StringProperty()
+    def execute(self, context ):
+        for m in bpy.data.objects[self.object_name].modifiers:
+            if m.type == "CLOTH" and not m.point_cache.is_baked:
+                if not m.show_viewport:
+                    self.report({'WARNING'}, "Modifier is not visible in the viewport, baking will have no effect!")
+                else:
+                    override = {'scene': context.scene, 'active_object': bpy.data.objects[self.object_name], 'point_cache': m.point_cache}
+                    bpy.ops.ptcache.bake(override, bake=True)
+                    self.report({'INFO'}, "Done baking physics for: "+self.object_name)
+            elif m.type == "CLOTH" and m.point_cache.is_baked:
+                override = {'scene': context.scene, 'active_object': bpy.data.objects[self.object_name], 'point_cache': m.point_cache}
+                bpy.ops.ptcache.free_bake(override)
+                self.report({'INFO'}, "Removed physics cache for: "+self.object_name)
+        return {'FINISHED'}
+
 classes = [
     CharacterUI
 ]
@@ -534,12 +625,15 @@ panels = [
     VIEW3D_PT_outfits,
     VIEW3D_PT_rig_layers,
     VIEW3D_PT_body,
-    VIEW3D_PT_physics_panel,
+    VIEW3D_PT_physics_body_panel,
+    VIEW3D_PT_physics_outfits_panel,
     VIEW3D_PT_miscellaneous,
+    VIEW3D_PT_physics_misc_panel,
     VIEW3D_PT_links
 ]
 operators = [
-    OPS_OT_ExpandAttributeGroup
+    OPS_OT_ExpandAttributeGroup,
+    OPS_PT_BakePhysics
 ]
 
 def register():
