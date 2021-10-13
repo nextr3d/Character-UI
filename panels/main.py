@@ -116,19 +116,19 @@ def register():
         update=CharacterUIMainUpdates.update_objects
     )
     bpy.types.Scene.character_ui_outfits_collection = PointerProperty(
-        name="Outfits Collection",
+        name="Outfits",
         description="Collection holding all of the outfits, for consistency should have the charactes name in it as a prefix for example",
         type=bpy.types.Collection,
         update=CharacterUIMainUpdates.update_collections
     )
     bpy.types.Scene.character_ui_hair_collection = PointerProperty(
-        name="Hair Collection",
+        name="Hair",
         description="Collection holding all of the hair styles, for consistency should have the charactes name in it as a prefix for example",
         type=bpy.types.Collection,
         update=CharacterUIMainUpdates.update_collections
     )
     bpy.types.Scene.character_ui_physics_collection = PointerProperty(
-        name="Physics Collection",
+        name="Physics",
         description="Collection holding all of the mesh deform cages, for consistency should have the characters name in it as a prefix for example",
         type=bpy.types.Collection,
         update=CharacterUIMainUpdates.update_physics_collection
