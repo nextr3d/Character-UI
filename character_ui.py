@@ -19,7 +19,7 @@ bl_info = {
     "name": "Character UI",
     "description": "Script rendering UI for your character",
     "author": "Nextr3D",
-    "version": (5, 0, 0),
+    "version": (5, 0, 1),
     "blender": (3, 0, 0)
 }
 class CharacterUI(PropertyGroup):
