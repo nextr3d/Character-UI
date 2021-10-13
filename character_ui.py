@@ -91,11 +91,20 @@ class CharacterUI(PropertyGroup):
                 variables = [{"name": "chui_outfit", "path": "%s.outfits_enum"%(key)},{"name": "chui_object", "path": "%s.%s"%(key,name)}]
                 lock_expression = "chui_lock==1"
                 expression = "not (chui_object == 1 and (chui_outfit ==%i or chui_lock==1))"%(index)
+
+                is_top_child = False
                 if o.parent:
+                    if not o.users_collection[0] == o.parent.users_collection[0]: #parent is in different collection so it has to 
+                        is_top_child = True
+                else:
+                    is_top_child = True
+                    
+                if is_top_child:
+                    variables.append({"name": "chui_lock", "path": "%s.%s_lock"%(key,name)})
+                else:
                     expression = "not (chui_object == 1 and chui_parent == 0)"
                     variables.append({"name": "chui_parent", "path": "hide_viewport", "driver_id": o.parent})
-                else:
-                    variables.append({"name": "chui_lock", "path": "%s.%s_lock"%(key,name)})
+
                 CharacterUIUtils.create_driver(ch, o, 'hide_viewport', expression, variables)
                 CharacterUIUtils.create_driver(ch, o, 'hide_render', expression, variables)
                 if "character_ui_masks" in ch.data and "body_object" in ch.data:
