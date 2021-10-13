@@ -541,6 +541,10 @@ class VIEW3D_PT_miscellaneous(VIEW3D_PT_characterUI):
                     if "misc" in ch[attributes_key]:
                         if len(ch[attributes_key]["misc"]):
                             return True
+                if "character_ui_cages" in ch.data:
+                    if "cages" in ch.data["character_ui_cages"]:
+                        out = list(filter(lambda x: "OP3" in x, ch.data["character_ui_cages"]["cages"]))
+                        return len(out) > 0
         return False
 
     def draw(self, context):

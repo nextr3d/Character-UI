@@ -66,6 +66,15 @@ class CharacterUIMainUpdates:
         if context.scene.character_ui_object:
             o = context.scene.character_ui_object
             o.data["body_object"] = context.scene.character_ui_object_body
+    
+    @staticmethod
+    def update_physics_collection(self, context):
+        ch = context.scene.character_ui_object
+        if ch:
+            if "character_ui_cages" not in ch.data:
+                ch.data["character_ui_cages"] = {"collection": None}
+            ch.data["character_ui_cages"]["collection"] = context.scene.character_ui_physics_collection
+
 
 class VIEW3D_PT_character_ui_main(Panel):
     bl_space_type = 'VIEW_3D'
@@ -86,6 +95,7 @@ class VIEW3D_PT_character_ui_main(Panel):
                 collections.label(text="Collections")
                 collections.prop(context.scene, "character_ui_outfits_collection")
                 collections.prop(context.scene, "character_ui_hair_collection")
+                collections.prop(context.scene, "character_ui_physics_collection")
                 objects = box.box()
                 objects.label(text="Objects")
                 objects.prop(context.scene, "character_ui_object_body")
@@ -117,6 +127,12 @@ def register():
         type=bpy.types.Collection,
         update=CharacterUIMainUpdates.update_collections
     )
+    bpy.types.Scene.character_ui_physics_collection = PointerProperty(
+        name="Physics Collection",
+        description="Collection holding all of the mesh deform cages, for consistency should have the characters name in it as a prefix for example",
+        type=bpy.types.Collection,
+        update=CharacterUIMainUpdates.update_physics_collection
+    )
     register_class(VIEW3D_PT_character_ui_main)
   
 
@@ -125,5 +141,6 @@ def unregister():
     del bpy.types.Scene.character_ui_object_body
     del bpy.types.Scene.character_ui_outfits_collection
     del bpy.types.Scene.character_ui_hair_collection
+    del bpy.types.Scene.character_ui_physics_collection
 
     unregister_class(VIEW3D_PT_character_ui_main)
