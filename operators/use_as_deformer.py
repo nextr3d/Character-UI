@@ -39,7 +39,11 @@ class OPS_OT_UseAsDeformer(Operator):
                     item["driver_id"] = outfit_piece 
                     found = True
             if not found:
-                shape_keys = ch.data["character_ui_shape_keys"].to_list()
+                shape_keys = []
+                try:
+                    shape_keys = ch.data["character_ui_shape_keys"].to_list()
+                except:
+                    shape_keys = ch.data["character_ui_shape_keys"]
                 shape_keys.append({"shape_key": shape_key_name, "driver_id": outfit_piece})
                 ch.data["character_ui_shape_keys"] = shape_keys
         return {"FINISHED"}
