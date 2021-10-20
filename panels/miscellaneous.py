@@ -56,7 +56,7 @@ class VIEW3D_PT_character_ui_links_panel(Panel):
                             link_row.operator(
                                 "wm.url_open", text=url).url = url
                             remove_link = link_row.operator(
-                                "character_ui.remove_link", text="", icon="TRASH")
+                                "character_ui.remove_link", text="", icon="X")
                             remove_link.link_section = s
                             remove_link.link = l
                         section_box.operator(

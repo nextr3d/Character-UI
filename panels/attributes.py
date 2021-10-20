@@ -96,7 +96,7 @@ class CharacterUIAttributesUtils:
                 for g in ch[attributes_key][panel_name]:
                     box = layout.box()
                     header_row = box.row(align=True)
-                    expand_op = header_row.operator("character_ui.expand_attribute_group", text="", icon="TRIA_DOWN" if g["expanded"] else "TRIA_RIGHT", emboss=False)
+                    expand_op = header_row.operator("character_ui.expand_attribute_group", text="", icon="DOWNARROW_HLT" if g["expanded"] else "RIGHTARROW", emboss=False)
                     expand_op.panel_name = panel_name
                     expand_op.group_name = g["name"]
                     try:
@@ -121,7 +121,7 @@ class CharacterUIAttributesUtils:
                     move_up_op.direction = False
                     #move down group operator
                     #delete group operator
-                    delete_op = header_row.operator("character_ui.remove_attribute_group", text="", icon="TRASH")
+                    delete_op = header_row.operator("character_ui.remove_attribute_group", text="", icon="X")
                     delete_op.panel_name = panel_name
                     delete_op.group_name = g["name"]
                     #delete group operator
@@ -160,7 +160,7 @@ class CharacterUIAttributesUtils:
                             op_down.panel_name = panel_name
                             op_down.group_name = g["name"]
 
-                            op = row.operator("character_ui.remove_attribute", icon="TRASH", text="")
+                            op = row.operator("character_ui.remove_attribute", icon="X", text="")
                             op.path = p["path"]
                             op.panel_name = panel_name
                             op.group_name = g["name"]

@@ -252,9 +252,9 @@ class CharacterUIUtils:
         row = element.row(align=True)
         name = o.name.replace(" ", "_")+"_outfit_toggle"
         if o.data:
-            CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and ("settings" in o.data or len(o.children))) else ("TRIA_RIGHT" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE" ))
+            CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="DOWNARROW_HLT" if (props[name] and ("settings" in o.data or len(o.children))) else ("RIGHTARROW" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE" ))
         else:
-            CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and (len(o.children))) else ("TRIA_RIGHT" if not props[name] and (len(o.children)) else "NONE" ))
+            CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="DOWNARROW_HLT" if (props[name] and (len(o.children))) else ("RIGHTARROW" if not props[name] and (len(o.children)) else "NONE" ))
         
         if not is_child:
             CharacterUIUtils.safe_render(row, props, name+"_lock",icon="LOCKED" if props[name+"_lock"] else "UNLOCKED")
@@ -283,7 +283,7 @@ class CharacterUIUtils:
         for g in groups:
             box = layout.box()
             header_row = box.row(align=True)
-            expanded_op = header_row.operator("character_ui_script.expand_attribute_group_%s"%(character_id.lower()), emboss=False, text="",icon="TRIA_DOWN" if g["expanded"] else "TRIA_RIGHT" )
+            expanded_op = header_row.operator("character_ui_script.expand_attribute_group_%s"%(character_id.lower()), emboss=False, text="",icon="DOWNARROW_HLT" if g["expanded"] else "RIGHTARROW" )
             expanded_op.panel_name = panel_name
             expanded_op.group_name = g["name"]
             try:
