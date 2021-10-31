@@ -16,10 +16,10 @@ custom_prefix = "CharacterUI_"
 attributes_key = "%satt_%s"%(custom_prefix, character_id)
 
 bl_info = {
-    "name": "Character UI",
+    "name": "Character UI Script",
     "description": "Script rendering UI for your character",
-    "author": "Nextr3D",
-    "version": (5, 0, 1),
+    "author": "nextr",
+    "version": (5, 1, 0),
     "blender": (3, 0, 0)
 }
 class CharacterUI(PropertyGroup):
