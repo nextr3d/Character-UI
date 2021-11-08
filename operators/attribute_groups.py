@@ -50,6 +50,7 @@ class OPS_OT_ExpandAttributeGroup(Operator):
                     ch[attributes_key][self.panel_name][i] = g
 
         return {'FINISHED'}
+        
 class OPS_OT_EditAttributeGroup(Operator):
     "Edits settings of attribute groups"
     bl_idname = "character_ui.edit_attribute_group"

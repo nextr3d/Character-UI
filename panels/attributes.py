@@ -96,7 +96,7 @@ class CharacterUIAttributesUtils:
                 for g in ch[attributes_key][panel_name]:
                     box = layout.box()
                     header_row = box.row(align=True)
-                    expand_op = header_row.operator("character_ui.expand_attribute_group", text="", icon="TRIA_DOWN" if g["expanded"] else "TRIA_RIGHT", emboss=False)
+                    expand_op = header_row.operator("character_ui.expand_attribute_group", text="", icon="DOWNARROW_HLT" if g["expanded"] else "RIGHTARROW", emboss=False)
                     expand_op.panel_name = panel_name
                     expand_op.group_name = g["name"]
                     try:
@@ -108,6 +108,11 @@ class CharacterUIAttributesUtils:
                     edit_op.panel_name = panel_name
                     edit_op.group_name = g["name"]
                     #edit group operator
+                    #visibility operator
+                    visibility_op = header_row.operator("character_ui.edit_visibility_variables", text="", icon="HIDE_OFF")
+                    visibility_op.panel_name = panel_name
+                    visibility_op.group_name = g["name"]
+                    #visibility operator
                     #move up group operator
                     move_up_op = header_row.operator("character_ui.attribute_group_change_position", text="", icon="TRIA_UP")
                     move_up_op.panel_name = panel_name
@@ -121,10 +126,11 @@ class CharacterUIAttributesUtils:
                     move_up_op.direction = False
                     #move down group operator
                     #delete group operator
-                    delete_op = header_row.operator("character_ui.remove_attribute_group", text="", icon="TRASH")
+                    delete_op = header_row.operator("character_ui.remove_attribute_group", text="", icon="X")
                     delete_op.panel_name = panel_name
                     delete_op.group_name = g["name"]
                     #delete group operator
+
                     if g["expanded"]:
                         for p in g["attributes"]:
                             row = box.row(align=True)
@@ -148,6 +154,11 @@ class CharacterUIAttributesUtils:
                             op_edit.panel_name = panel_name
                             op_edit.group_name = g["name"]
 
+                            a_visibility_op = row.operator("character_ui.edit_visibility_variables", text="", icon="HIDE_OFF")
+                            a_visibility_op.panel_name = panel_name
+                            a_visibility_op.group_name = g["name"]
+                            a_visibility_op.path = p["path"]
+
                             op_up = row.operator("character_ui.attribute_change_position", icon="TRIA_UP", text="")
                             op_up.direction = True
                             op_up.path = p["path"]
@@ -160,7 +171,7 @@ class CharacterUIAttributesUtils:
                             op_down.panel_name = panel_name
                             op_down.group_name = g["name"]
 
-                            op = row.operator("character_ui.remove_attribute", icon="TRASH", text="")
+                            op = row.operator("character_ui.remove_attribute", icon="X", text="")
                             op.path = p["path"]
                             op.panel_name = panel_name
                             op.group_name = g["name"]

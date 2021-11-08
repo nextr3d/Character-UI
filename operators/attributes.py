@@ -37,9 +37,12 @@ class OPS_OT_AddNewAttribute(Operator):
                 driver_path = path[path.rindex('.')+1:]
                 prop = eval(path[:path.rindex('.')])
                 parent_prop = eval(self.parent_path[:self.parent_path.rindex(".")])
-
+                print(parent_prop.bl_rna, " ", prop.bl_rna)
                 if parent_prop.bl_rna == prop.bl_rna:
-                    CharacterUIAttributesOperatorsUtils.create_driver(driver_id, prop, driver_path, "chui_value", [{"name": "chui_value", "path":driver_id_path}])
+                    err = CharacterUIAttributesOperatorsUtils.create_driver(driver_id, prop, driver_path, "chui_value", [{"name": "chui_value", "path":driver_id_path}])
+                    if err:
+                        self.report({'ERROR'}, "Could not create driver and sync the attributes!")
+                        return {"CANCELLED"}
                     name = "Default Value"
                     for g in ch[attributes_key][self.panel_name]:
                         if g["name"] == self.group_name:
@@ -137,8 +140,12 @@ class CharacterUIAttributesOperatorsUtils():
     @staticmethod
     def create_driver(driver_id, driver_target, driver_path, driver_expression, variables):
         "TODO: same exact code is in the add-on, make it that it's only once in the whole codebase"
-        driver_target.driver_remove(driver_path)
-        driver = driver_target.driver_add(driver_path)
+
+        try:
+            driver_target.driver_remove(driver_path)
+            driver = driver_target.driver_add(driver_path)
+        except: 
+            return True
 
         def setup_driver(driver, addition_path = ""):
             driver.type = "SCRIPTED"
@@ -196,8 +203,31 @@ class OPS_OT_EditAttribute(Operator):
         return context.window_manager.invoke_props_dialog(self, width=750)
 
     def draw(self, context):
-        layout = self.layout
-        layout.prop(self, "attribute_name")
+        ch = context.scene.character_ui_object
+        rig_id = ch.data[context.scene.character_ui_object_id]
+        attributes_key = "CharacterUI_att_%s"%(rig_id)
+        if attributes_key in ch:
+            if self.panel_name in ch[attributes_key]:
+                for g in ch[attributes_key][self.panel_name]:
+                    if self.group_name == g["name"]:
+                        for att in g["attributes"]:
+                            if att["path"] == self.path:
+                                layout = self.layout
+                                layout.prop(self, "attribute_name")
+                                layout.label(text=self.path)
+                                if "synced" in att and len(att["synced"]):
+                                    synced_box = layout.box()
+                                    synced_box.label(text="Synced attributes", icon="LINK_BLEND")
+                                    for s in att["synced"]:
+                                        synced_row = synced_box.row()
+                                        synced_row.label(text=s)
+                                        remove_op = synced_row.operator(OPS_OT_RemoveSyncedAttribute.bl_idname, icon="X")
+                                        remove_op.path = s
+                                        remove_op.parent_path = self.path
+                                        remove_op.panel_name = self.panel_name
+                                        remove_op.group_name = self.group_name
+
+        
     def execute(self, context):
         ch = context.scene.character_ui_object
         rig_id = ch.data[context.scene.character_ui_object_id]
@@ -211,11 +241,40 @@ class OPS_OT_EditAttribute(Operator):
                                 if self.attribute_name not in ["", " "]:
                                     att["name"] = self.attribute_name
         return{"FINISHED"}
+class OPS_OT_RemoveSyncedAttribute(Operator):
+    bl_idname = "character_ui.remove_synced_attribute"
+    bl_label = ""
+    bl_description = "Removes synced attribute"
+
+    path : StringProperty()
+    parent_path: StringProperty()
+    panel_name : StringProperty()
+    group_name : StringProperty()
+
+    def execute(self, context):
+        ch = context.scene.character_ui_object
+        rig_id = ch.data[context.scene.character_ui_object_id]
+        attributes_key = "CharacterUI_att_%s"%(rig_id)
+        if attributes_key in ch:
+            if self.panel_name in ch[attributes_key]:
+                for g in ch[attributes_key][self.panel_name]:
+                    if self.group_name == g["name"]:
+                        for att in g["attributes"]:
+                            if att["path"] == self.parent_path:
+                                prop = eval(self.path[:self.path.rindex('.')])
+                                driver_path = self.path[self.path.rindex('.')+1:]
+                                prop.driver_remove(driver_path)
+                                att["synced"] = [item for item in att["synced"] if item != self.path]
+        return{"FINISHED"}
+
+                                  
+
 classes = [
     OPS_OT_AddNewAttribute,
     OPS_OT_RemoveAttribute,
     OPS_OT_AttributeChangePosition,
-    OPS_OT_EditAttribute
+    OPS_OT_EditAttribute,
+    OPS_OT_RemoveSyncedAttribute
 ]
 def register():
     for c in classes:

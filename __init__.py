@@ -2,7 +2,7 @@ bl_info = {
     "name": "Character-UI",
     "description": "Addon for creating simple yet functional menus for your characters",
     "author": "nextr",
-    "version": (1, 0, 1),
+    "version": (1, 1, 0),
     "blender": (3, 0, 0),
 	"location": "View3d > Sidebar > Character-UI",
 	"category": 'Interface',

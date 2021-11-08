@@ -16,10 +16,10 @@ custom_prefix = "CharacterUI_"
 attributes_key = "%satt_%s"%(custom_prefix, character_id)
 
 bl_info = {
-    "name": "Character UI",
+    "name": "Character UI Script",
     "description": "Script rendering UI for your character",
-    "author": "Nextr3D",
-    "version": (5, 0, 1),
+    "author": "nextr",
+    "version": (5, 1, 0),
     "blender": (3, 0, 0)
 }
 class CharacterUI(PropertyGroup):
@@ -252,9 +252,9 @@ class CharacterUIUtils:
         row = element.row(align=True)
         name = o.name.replace(" ", "_")+"_outfit_toggle"
         if o.data:
-            CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and ("settings" in o.data or len(o.children))) else ("TRIA_RIGHT" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE" ))
+            CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="DOWNARROW_HLT" if (props[name] and ("settings" in o.data or len(o.children))) else ("RIGHTARROW" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE" ))
         else:
-            CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="TRIA_DOWN" if (props[name] and (len(o.children))) else ("TRIA_RIGHT" if not props[name] and (len(o.children)) else "NONE" ))
+            CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="DOWNARROW_HLT" if (props[name] and (len(o.children))) else ("RIGHTARROW" if not props[name] and (len(o.children)) else "NONE" ))
         
         if not is_child:
             CharacterUIUtils.safe_render(row, props, name+"_lock",icon="LOCKED" if props[name+"_lock"] else "UNLOCKED")
@@ -281,33 +281,47 @@ class CharacterUIUtils:
     @staticmethod
     def render_attributes(layout, groups, panel_name):
         for g in groups:
-            box = layout.box()
-            header_row = box.row(align=True)
-            expanded_op = header_row.operator("character_ui_script.expand_attribute_group_%s"%(character_id.lower()), emboss=False, text="",icon="TRIA_DOWN" if g["expanded"] else "TRIA_RIGHT" )
-            expanded_op.panel_name = panel_name
-            expanded_op.group_name = g["name"]
-            try:
-                header_row.label(text=g["name"].replace("_", " "), icon=g["icon"])
-            except:
-                header_row.label(text=g["name"].replace("_", " "))
+            render = True
+            if "visibility" in g:
+                expression = g["visibility"]["expression"]
+                for var in g["visibility"]["variables"]:
+                    expression =  expression.replace(str(var["variable"]), str(var["data_path"]))
+                render = eval(expression)
+            if render:
+                box = layout.box()
+                header_row = box.row(align=True)
+                expanded_op = header_row.operator("character_ui_script.expand_attribute_group_%s"%(character_id.lower()), emboss=False, text="",icon="DOWNARROW_HLT" if g["expanded"] else "RIGHTARROW" )
+                expanded_op.panel_name = panel_name
+                expanded_op.group_name = g["name"]
+                try:
+                    header_row.label(text=g["name"].replace("_", " "), icon=g["icon"])
+                except:
+                    header_row.label(text=g["name"].replace("_", " "))
 
-            if g["expanded"]:
-                for a in g["attributes"]:
-                    row = box.row(align=True)
-                    delimiter = '][' if '][' in a['path'] else '.'
-                    offset = 1 if '][' in a['path'] else 0
-                    prop = a['path'][a['path'].rindex(delimiter)+1:]
-                    path = a['path'][:a['path'].rindex(delimiter)+offset]
-                    if a['name']:
-                        try:
-                            row.prop(eval(path), prop, text=a['name'])
-                        except:
-                            print("couldn't render ", path, " prop")
-                    else:
-                        try:
-                            row.prop(eval(path), prop)
-                        except:
-                            print("couldn't render ", path, " prop")
+                if g["expanded"]:
+                    for a in g["attributes"]:
+                        render_attribute = True
+                        if "visibility" in a:
+                            expression_a = a["visibility"]["expression"]
+                            for var in a["visibility"]["variables"]:
+                                expression_a = expression_a.replace(var["variable"], var["data_path"])
+                            render_attribute = eval(expression_a)
+                        if render_attribute:
+                            row = box.row(align=True)
+                            delimiter = '][' if '][' in a['path'] else '.'
+                            offset = 1 if '][' in a['path'] else 0
+                            prop = a['path'][a['path'].rindex(delimiter)+1:]
+                            path = a['path'][:a['path'].rindex(delimiter)+offset]
+                            if a['name']:
+                                try:
+                                    row.prop(eval(path), prop, text=a['name'])
+                                except:
+                                    print("couldn't render ", path, " prop")
+                            else:
+                                try:
+                                    row.prop(eval(path), prop)
+                                except:
+                                    print("couldn't render ", path, " prop")
     @staticmethod
     def create_unique_ids(panels, operators):
         for p in panels:
