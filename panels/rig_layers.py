@@ -8,7 +8,7 @@ class CharacterUIRigLayerUpdates():
     def update_rig_layer_key(self, context):
         key = context.scene.character_ui_rig_layers_key
         o = context.scene.character_ui_object
-        for i in range(31):
+        for i in range(32):
             visible = False
             name = ""
             row = i + 1
@@ -41,9 +41,8 @@ class VIEW3D_PT_character_ui_rig_layers(Panel):
         if ch:
             if ch.type == "ARMATURE":
                 box.prop(context.scene, "character_ui_rig_layers_key")
-                for i in range(31):
+                for i in range(32):
                     row = box.row(align=True)
-                    # row.label(text="%i."%(i))
                     icon = "HIDE_ON"
                     if "character_ui_row_visible_%i"%(i) in context.scene:
                         if context.scene["character_ui_row_visible_%i"%(i)]:
@@ -65,7 +64,7 @@ def character_ui_generate_rig_layers(self, context):
     if ch and key:
         ch.data[key] = []
         layers = []
-        for i in range(31):
+        for i in range(32):
             row = i
             if "character_ui_row_index_%i"%(i) in context.scene:
                 row = context.scene["character_ui_row_index_%i"%(i)] - 1 
@@ -88,18 +87,17 @@ classes = [
 ]
 def register():
     bpy.types.Scene.character_ui_rig_layers_key = StringProperty(name="Rig Layers Key", default="rig_layers", update=CharacterUIRigLayerUpdates.update_rig_layer_key)
-    for i in range(31):
+    for i in range(32):
         setattr(bpy.types.Scene, "character_ui_row_visible_%i"%(i), BoolProperty(name="",update=character_ui_generate_rig_layers))
         setattr(bpy.types.Scene, "character_ui_row_name_%i"%(i), StringProperty(name="",update=character_ui_generate_rig_layers))
-        setattr(bpy.types.Scene, "character_ui_row_index_%i"%(i), IntProperty(name="UI Row", min=1, max=32,update=character_ui_generate_rig_layers))
-
+        setattr(bpy.types.Scene, "character_ui_row_index_%i"%(i), IntProperty(name="UI Row", min=1, max=32, default=i+1,update=character_ui_generate_rig_layers))
 
     for c in classes:
         register_class(c)
   
 
 def unregister():
-    for i in range(31):
+    for i in range(32):
         delattr(bpy.types.Scene, "character_ui_row_visible_%i"%(i))
         delattr(bpy.types.Scene, "character_ui_row_name_%i"%(i))
         delattr(bpy.types.Scene, "character_ui_row_index_%i"%(i))
