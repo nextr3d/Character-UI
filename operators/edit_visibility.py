@@ -82,8 +82,7 @@ class OPS_OT_EditVisibilityVariables(Operator):
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "expression")
-        
-        
+       
         for var in enumerate(context.scene.character_ui_variables):
             box = layout.box()
             box.prop(var[1], "variable")

@@ -67,6 +67,7 @@ def register():
 
 def unregister():
     del bpy.types.Scene.character_ui_object_id
+    del bpy.types.Scene.character_ui_custom_label
     for c in reversed(classes):
         unregister_class(c)
 

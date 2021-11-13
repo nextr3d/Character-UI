@@ -20,22 +20,23 @@ class OPS_OT_AddNewAttribute(Operator):
                 bpy.ops.ui.copy_data_path_button(full_path=True)
             except:
                 self.report({'WARNING'}, "Couldn't get path, invalid selection!")
-                return {'FINISHED'}
+                return {'CANCELLED'}
 
             path = context.window_manager.clipboard
             
-            name=path[:path.rindex('.')]+".name"
+            prop = context.button_prop
+            name=False
             try:
-                name=eval(name)
+                name=prop.name
             except:
                 name = False
             rig_id = ch.data[context.scene.character_ui_object_id]
             attributes_key = "CharacterUI_att_%s"%(rig_id)
+
             if self.parent_path not in ["", " "]: #syncing attribtues
                 driver_id = eval(self.parent_path[:self.parent_path.index(']')+1])
                 driver_id_path = self.parent_path[self.parent_path.index(']')+2:]
                 driver_path = path[path.rindex('.')+1:]
-                prop = eval(path[:path.rindex('.')])
                 parent_prop = eval(self.parent_path[:self.parent_path.rindex(".")])
                 print(parent_prop.bl_rna, " ", prop.bl_rna)
                 if parent_prop.bl_rna == prop.bl_rna:
