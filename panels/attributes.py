@@ -138,17 +138,31 @@ class CharacterUIAttributesUtils:
                             offset = 1 if "][" in p["path"] else 0
                             prop = p["path"][p["path"].rindex(delimiter)+1:]
                             path = p["path"][:p["path"].rindex(delimiter)+offset]
-
+                            prop_exists = True
+                            toggle = p["toggle"] if "invert_checkbox" in p else False
+                            invert_checkbox = p["invert_checkbox"] if "invert_checkbox" in p else False
+                            slider = p["slider"] if "slider" in p else False
+                            emboss = p["emboss"] if "emboss" in p else True
+                            icon = p["icon"] if "icon" in p else "NONE"
+                            try:
+                                 eval(p["path"])
+                            except:
+                                prop_exists = False
                             if p["name"]:
                                 try:
-                                    row.prop(eval(path), prop, text=p["name"])
+                                    row.prop(eval(path), prop, text=p["name"], invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon, emboss=emboss)
                                 except:
-                                    continue
+                                   continue
+
                             else:
                                 try:
-                                    row.prop(eval(path), prop)
+                                    row.prop(eval(path), prop, invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon,emboss=emboss)
                                 except:
                                     continue
+                           
+                            if not prop_exists:
+                                row.label(text="Invalid attribute", icon="ERROR")
+
                             op_edit = row.operator("character_ui.edit_attribute", icon="PREFERENCES", text="")
                             op_edit.path = p["path"]
                             op_edit.panel_name = panel_name

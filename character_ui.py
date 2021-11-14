@@ -312,14 +312,19 @@ class CharacterUIUtils:
                             offset = 1 if '][' in a['path'] else 0
                             prop = a['path'][a['path'].rindex(delimiter)+1:]
                             path = a['path'][:a['path'].rindex(delimiter)+offset]
+
+                            toggle = a["toggle"] if "invert_checkbox" in a else False
+                            invert_checkbox = a["invert_checkbox"] if "invert_checkbox" in a else False
+                            slider = a["slider"] if "slider" in a else False
+                            icon = a["icon"] if "icon" in a else "NONE"
                             if a['name']:
                                 try:
-                                    row.prop(eval(path), prop, text=a['name'])
+                                    row.prop(eval(path), prop, text=a['name'], invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon)
                                 except:
                                     print("couldn't render ", path, " prop")
                             else:
                                 try:
-                                    row.prop(eval(path), prop)
+                                    row.prop(eval(path), prop, invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon)
                                 except:
                                     print("couldn't render ", path, " prop")
     @staticmethod

@@ -24,10 +24,10 @@ class OPS_OT_AddNewAttribute(Operator):
 
             path = context.window_manager.clipboard
             
-            prop = context.button_prop
+            button_prop = context.button_prop
             name=False
             try:
-                name=prop.name
+                name=button_prop.name
             except:
                 name = False
             rig_id = ch.data[context.scene.character_ui_object_id]
@@ -38,7 +38,11 @@ class OPS_OT_AddNewAttribute(Operator):
                 driver_id_path = self.parent_path[self.parent_path.index(']')+2:]
                 driver_path = path[path.rindex('.')+1:]
                 parent_prop = eval(self.parent_path[:self.parent_path.rindex(".")])
-                print(parent_prop.bl_rna, " ", prop.bl_rna)
+                prop = eval(path[:path.rindex('.')])
+                # print(parent_prop.bl_rna)
+                # print(dir(parent_prop.bl_rna))
+                print(parent_prop.type, prop.type)
+                print(parent_prop.bl_rna == prop.bl_rna, prop.bl_rna, parent_prop.bl_rna)
                 if parent_prop.bl_rna == prop.bl_rna:
                     err = CharacterUIAttributesOperatorsUtils.create_driver(driver_id, prop, driver_path, "chui_value", [{"name": "chui_value", "path":driver_id_path}])
                     if err:
@@ -188,6 +192,11 @@ class OPS_OT_EditAttribute(Operator):
     panel_name : StringProperty()
     group_name : StringProperty()
     attribute_name : StringProperty(name="Name")
+    invert_checkbox : BoolProperty(description="Forces checkbox to be inverted")
+    toggle : BoolProperty(description="Style checkbox as a toggle")
+    slider : BoolProperty(description="Use slider widget for numeric values")
+    emboss : BoolProperty(description="Draw the button itself, not just the icon/text")
+    icon : StringProperty(description="Override automatic icon of the item")
 
     def invoke(self, context, event):
         ch = context.scene.character_ui_object
@@ -199,8 +208,12 @@ class OPS_OT_EditAttribute(Operator):
                     if self.group_name == g["name"]:
                         for att in g["attributes"]:
                             if att["path"] == self.path:
-                               self.attribute_name = att["name"] if att["name"] else "Default Value"
-                                  
+                                self.attribute_name = att["name"] if att["name"] else "Default Value"
+                                self.invert_checkbox = att["invert_checkbox"] if "invert_checkbox" in att else False
+                                self.toggle = att["toggle"] if "toggle" in att else False
+                                self.slider = att["slider"] if "slider" in att else False
+                                self.emboss = att["emboss"] if "emboss" in att else True
+                                self.icon = ("" if att["icon"] == "NONE" else att["icon"]) if "icon" in att else ""
         return context.window_manager.invoke_props_dialog(self, width=750)
 
     def draw(self, context):
@@ -213,20 +226,44 @@ class OPS_OT_EditAttribute(Operator):
                     if self.group_name == g["name"]:
                         for att in g["attributes"]:
                             if att["path"] == self.path:
-                                layout = self.layout
-                                layout.prop(self, "attribute_name")
-                                layout.label(text=self.path)
-                                if "synced" in att and len(att["synced"]):
-                                    synced_box = layout.box()
-                                    synced_box.label(text="Synced attributes", icon="LINK_BLEND")
-                                    for s in att["synced"]:
-                                        synced_row = synced_box.row()
-                                        synced_row.label(text=s)
-                                        remove_op = synced_row.operator(OPS_OT_RemoveSyncedAttribute.bl_idname, icon="X")
-                                        remove_op.path = s
-                                        remove_op.parent_path = self.path
-                                        remove_op.panel_name = self.panel_name
-                                        remove_op.group_name = self.group_name
+                                try:
+                                    layout = self.layout
+                                    layout.prop(self, "attribute_name")
+                                    layout.label(text=self.path)
+                                    style_box = layout.box()
+                                    style_box.label(text="Style")
+                                    row = style_box.row()
+
+                                    row.prop(self, "invert_checkbox", text="Invert checkbox", toggle=True)
+                                    row.prop(self, "toggle", text="Toggle", toggle=True)
+                                    row.prop(self, "slider", text="Slider", toggle=True)
+                                    row.prop(self, "emboss", text="Emboss", toggle=True)
+                                    
+                                    style_box.prop(self, "icon", text="Icon")
+                                    try:
+                                        style_box.label(text="-   Icon Preview", icon=self.icon)
+                                    except:
+                                        style_box.label(text="This icon does not exist - Icon Preview")
+
+                                    if "synced" in att and len(att["synced"]):
+                                        synced_box = layout.box()
+                                        synced_box.label(text="Synced attributes", icon="LINK_BLEND")
+                                        for s in att["synced"]:
+                                            synced_row = synced_box.row()
+                                            synced_row.label(text=s)
+                                            remove_op = synced_row.operator(OPS_OT_RemoveSyncedAttribute.bl_idname, icon="X")
+                                            remove_op.path = s
+                                            remove_op.parent_path = self.path
+                                            remove_op.panel_name = self.panel_name
+                                            remove_op.group_name = self.group_name
+                                except:
+                                    layout = self.layout
+                                    layout.label(text="Invalid attribute", icon="ERROR")
+                                    op = layout.operator(OPS_OT_RemoveAttribute.bl_idname, icon="X", text="Remove attribute")
+                                    op.path = self.path
+                                    op.panel_name = self.panel_name
+                                    op.group_name = self.group_name
+                               
 
         
     def execute(self, context):
@@ -241,6 +278,15 @@ class OPS_OT_EditAttribute(Operator):
                             if att["path"] == self.path:
                                 if self.attribute_name not in ["", " "]:
                                     att["name"] = self.attribute_name
+                                    att["invert_checkbox"] = self.invert_checkbox
+                                    att["toggle"] = self.toggle
+                                    att["slider"] = self.slider
+                                    if self.icon not in["", " "]:
+                                        att["icon"] = self.icon
+                                    else:
+                                        att["icon"] = "NONE"
+                                    att["emboss"] = self.emboss
+
         return{"FINISHED"}
 class OPS_OT_RemoveSyncedAttribute(Operator):
     bl_idname = "character_ui.remove_synced_attribute"
