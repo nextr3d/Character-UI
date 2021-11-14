@@ -39,10 +39,6 @@ class OPS_OT_AddNewAttribute(Operator):
                 driver_path = path[path.rindex('.')+1:]
                 parent_prop = eval(self.parent_path[:self.parent_path.rindex(".")])
                 prop = eval(path[:path.rindex('.')])
-                # print(parent_prop.bl_rna)
-                # print(dir(parent_prop.bl_rna))
-                print(parent_prop.type, prop.type)
-                print(parent_prop.bl_rna == prop.bl_rna, prop.bl_rna, parent_prop.bl_rna)
                 if parent_prop.bl_rna == prop.bl_rna:
                     err = CharacterUIAttributesOperatorsUtils.create_driver(driver_id, prop, driver_path, "chui_value", [{"name": "chui_value", "path":driver_id_path}])
                     if err:
