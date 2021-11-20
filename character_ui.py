@@ -20,6 +20,7 @@ bl_info = {
     "description": "Script rendering UI for your character",
     "author": "nextr",
     "version": (5, 1, 0),
+    "branch": "improvements",
     "blender": (3, 0, 0)
 }
 class CharacterUI(PropertyGroup):
@@ -604,7 +605,7 @@ class VIEW3D_PT_links(VIEW3D_PT_characterUI):
                         column.operator("wm.url_open", text=link, icon=data[links_key][section][link][0]).url = data[links_key][section][link][1]
                     except:
                         column.operator("wm.url_open", text=link).url = data[links_key][section][link][1]
-        layout.label(text='Character-UI v%s'%(".".join(str(i) for i in bl_info["version"])), icon='SETTINGS')
+        layout.label(text='Character-UI v%s%s' % (".".join(str(i) for i in bl_info["version"]), '-%s' % (bl_info["branch"]) if "branch" in bl_info else ""), icon='SETTINGS')
         layout.operator("wm.url_open", text="UI bugs/suggestions").url = "https://github.com/nextr3d/Character-UI/issues/new/choose"
         layout.operator("wm.url_open", text="Download Character-UI add-on").url = "https://github.com/nextr3d/Character-UI"
 
