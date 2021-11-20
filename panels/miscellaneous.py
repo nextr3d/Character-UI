@@ -66,15 +66,17 @@ class VIEW3D_PT_character_ui_links_panel(Panel):
             else:
                 layout.operator("character_ui.enable_links", icon="PLUS")
 
+
 classes = [
     VIEW3D_PT_character_ui_miscellaneous,
     VIEW3D_PT_character_ui_links_panel
 ]
 
+
 def register():
     bpy.types.Scene.character_ui_links_key = StringProperty(name="Links Key",
                                                             description="Under which custom property the links are stored",
-                                                           default="character_ui_links")
+                                                            default="character_ui_links")
     for c in classes:
         register_class(c)
 

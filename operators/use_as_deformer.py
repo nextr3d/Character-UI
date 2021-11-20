@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import (Operator)
-from bpy.props import (PointerProperty, StringProperty) 
+from bpy.props import (PointerProperty, StringProperty)
 from bpy.utils import (register_class, unregister_class)
 
 
@@ -17,7 +17,7 @@ class OPS_OT_UseAsDeformer(Operator):
         if "character_ui_shape_keys" in ch.data:
             for item in ch.data["character_ui_shape_keys"]:
                 if item["shape_key"] == self.shape_key:
-                    context.scene.character_ui_shape_key_outfit_piece = item["driver_id"] 
+                    context.scene.character_ui_shape_key_outfit_piece = item["driver_id"]
         return context.window_manager.invoke_props_dialog(self, width=350)
 
     def draw(self, context):
@@ -36,7 +36,7 @@ class OPS_OT_UseAsDeformer(Operator):
                 ch.data["character_ui_shape_keys"] = []
             for item in ch.data["character_ui_shape_keys"]:
                 if item["shape_key"] == shape_key_name:
-                    item["driver_id"] = outfit_piece 
+                    item["driver_id"] = outfit_piece
                     found = True
             if not found:
                 shape_keys = []
@@ -44,21 +44,26 @@ class OPS_OT_UseAsDeformer(Operator):
                     shape_keys = ch.data["character_ui_shape_keys"].to_list()
                 except:
                     shape_keys = ch.data["character_ui_shape_keys"]
-                shape_keys.append({"shape_key": shape_key_name, "driver_id": outfit_piece})
+                shape_keys.append(
+                    {"shape_key": shape_key_name, "driver_id": outfit_piece})
                 ch.data["character_ui_shape_keys"] = shape_keys
         return {"FINISHED"}
+
+
 classes = [
     OPS_OT_UseAsDeformer
 ]
+
+
 def register():
-    bpy.types.Scene.character_ui_shape_key_outfit_piece = PointerProperty(type=bpy.types.Object, name="Outfit piece")
+    bpy.types.Scene.character_ui_shape_key_outfit_piece = PointerProperty(
+        type=bpy.types.Object, name="Outfit piece")
 
     for c in classes:
         register_class(c)
-  
+
 
 def unregister():
-    del  bpy.types.Scene.character_ui_shape_key_outfit_piece
+    del bpy.types.Scene.character_ui_shape_key_outfit_piece
     for c in reversed(classes):
         unregister_class(c)
-

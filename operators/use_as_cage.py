@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import (Operator)
-from bpy.props import (PointerProperty, StringProperty,EnumProperty) 
+from bpy.props import (PointerProperty, StringProperty, EnumProperty)
 from bpy.utils import (register_class, unregister_class)
 
 
@@ -10,7 +10,8 @@ class OPS_OT_UseAsCage(Operator):
     bl_description = "Options for object which could be used as mesh deform cage"
 
     cage: StringProperty()
-    panel : EnumProperty(name="Panel", items=[("OP1", "Outfits","Toggles in the Outfits Panel"), ("OP2", "Body","Toggles in the Body Panel"),("OP3", "Miscellaneous", "Toggles in the MIscellanesou Panel"), ("OP4", "None","Not visible in the UI")])
+    panel: EnumProperty(name="Panel", items=[("OP1", "Outfits", "Toggles in the Outfits Panel"), ("OP2", "Body", "Toggles in the Body Panel"), (
+        "OP3", "Miscellaneous", "Toggles in the MIscellanesou Panel"), ("OP4", "None", "Not visible in the UI")])
 
     def invoke(self, context, event):
         ch = context.scene.character_ui_object
@@ -33,7 +34,8 @@ class OPS_OT_UseAsCage(Operator):
                 add_new = True
                 for c in ch.data["character_ui_cages"]["cages"]:
                     if c[0].name == self.cage and self.panel != "OP4":
-                        new_cages.append((bpy.data.objects[self.cage], self.panel))
+                        new_cages.append(
+                            (bpy.data.objects[self.cage], self.panel))
                         add_new = False
                     elif c[0].name != self.cage:
                         new_cages.append(c)
@@ -41,18 +43,22 @@ class OPS_OT_UseAsCage(Operator):
                     new_cages.append((bpy.data.objects[self.cage], self.panel))
                 ch.data["character_ui_cages"]["cages"] = new_cages
             else:
-                ch.data["character_ui_cages"]["cages"] = [(bpy.data.objects[self.cage], self.panel)]
+                ch.data["character_ui_cages"]["cages"] = [
+                    (bpy.data.objects[self.cage], self.panel)]
         return {"FINISHED"}
+
+
 classes = [
     OPS_OT_UseAsCage
 ]
+
+
 def register():
 
     for c in classes:
         register_class(c)
-  
+
 
 def unregister():
     for c in reversed(classes):
         unregister_class(c)
-
