@@ -222,7 +222,13 @@ class OPS_OT_EditAttribute(Operator):
                     if self.group_name == g["name"]:
                         for att in g["attributes"]:
                             if att["path"] == self.path:
+                                prop_exists = True
                                 try:
+                                    eval(att["path"])
+                                except:
+                                    prop_exists = False
+
+                                if prop_exists:
                                     layout = self.layout
                                     layout.prop(self, "attribute_name")
                                     layout.label(text=self.path)
@@ -252,7 +258,7 @@ class OPS_OT_EditAttribute(Operator):
                                             remove_op.parent_path = self.path
                                             remove_op.panel_name = self.panel_name
                                             remove_op.group_name = self.group_name
-                                except:
+                                else:
                                     layout = self.layout
                                     layout.label(text="Invalid attribute", icon="ERROR")
                                     op = layout.operator(OPS_OT_RemoveAttribute.bl_idname, icon="X", text="Remove attribute")
