@@ -150,7 +150,6 @@ class CharacterUIAttributesUtils:
 
                     if g["expanded"]:
                         for p in g["attributes"]:
-                            row = box.row(align=True)
                             delimiter = "][" if "][" in p["path"] else "."
                             offset = 1 if "][" in p["path"] else 0
                             prop = p["path"][p["path"].rindex(delimiter)+1:]
@@ -166,19 +165,26 @@ class CharacterUIAttributesUtils:
                                 eval(p["path"])
                             except:
                                 prop_exists = False
-                            if p["name"]:
-                                try:
-                                    row.prop(eval(
-                                        path), prop, text=p["name"], invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon, emboss=emboss)
-                                except:
-                                    continue
 
+                            row = box.row(align=True)
+
+                            if not prop_exists:
+                                row.label(text="Invalid attribute",
+                                          icon="ERROR")
                             else:
-                                try:
-                                    row.prop(eval(path), prop, invert_checkbox=invert_checkbox,
-                                             toggle=toggle, slider=slider, icon=icon, emboss=emboss)
-                                except:
-                                    continue
+                                if p["name"]:
+                                    try:
+                                        row.prop(eval(
+                                            path), prop, text=p["name"], invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon, emboss=emboss)
+                                    except:
+                                        continue
+
+                                else:
+                                    try:
+                                        row.prop(eval(path), prop, invert_checkbox=invert_checkbox,
+                                                 toggle=toggle, slider=slider, icon=icon, emboss=emboss)
+                                    except:
+                                        continue
 
                             if not prop_exists:
                                 row.label(text="Invalid attribute",
