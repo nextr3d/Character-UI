@@ -406,12 +406,16 @@ class CharacterUIUtils:
 
 
 class VIEW3D_PT_characterUI(Panel):
+    "Main panle"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = custom_label
 
     @classmethod
     def poll(self, context):
+        if always_show:
+            return True
+
         ch = CharacterUIUtils.get_character()
         if ch:
             return ch == context.object
@@ -419,6 +423,7 @@ class VIEW3D_PT_characterUI(Panel):
 
 
 class VIEW3D_PT_outfits(VIEW3D_PT_characterUI):
+    "Panel for outfits, settings and attributes regarding the outfits of the character"
     bl_label = "Outfits"
     bl_idname = "VIEW3D_PT_outfits"
 
@@ -562,6 +567,7 @@ class VIEW3D_PT_physics_misc_panel(VIEW3D_PT_characterUI):
 
 
 class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
+    "Panel for rig layers, settings and attributes regarding the rig"
     bl_label = "Rig"
     bl_idname = "VIEW3D_PT_rig_layers"
 
@@ -655,6 +661,7 @@ class VIEW3D_PT_miscellaneous(VIEW3D_PT_characterUI):
 
 
 class VIEW3D_PT_links(VIEW3D_PT_characterUI):
+    "Panel containing links and build info of the UI"
     bl_label = "Links"
     bl_idname = "VIEW3D_PT_links"
 

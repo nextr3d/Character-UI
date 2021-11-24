@@ -2,7 +2,7 @@ import random
 import string
 import bpy
 from bpy.types import (Panel, PropertyGroup, Operator)
-from bpy.props import (PointerProperty, StringProperty)
+from bpy.props import (PointerProperty, StringProperty, BoolProperty)
 from bpy.utils import (register_class, unregister_class)
 
 
@@ -38,17 +38,23 @@ class VIEW3D_PT_character_ui_generate(Panel):
             box.label(text="Generate UI for %s" % (o.name))
             box.prop(context.scene, "character_ui_object_id")
             box.prop(context.scene, "character_ui_custom_label")
+            box.prop(context.scene, "character_ui_always_show")
+
             row = box.row()
             row.operator(OPS_OT_GenerateID.bl_idname)
             if context.scene.character_ui_object_id in o.data:
                 character_id_key = context.scene.character_ui_object_id
                 character_id = o.data[character_id_key]
                 rig_layers_key = context.scene.character_ui_rig_layers_key
+                always_show = context.scene.character_ui_always_show
+
                 row.label(text="Rig ID: %s" % (character_id))
                 op = box.operator("characterui_generate.generate_script")
                 op.character_id = character_id
                 op.character_id_key = character_id_key
                 op.rig_layers_key = rig_layers_key
+                op.always_show = always_show
+
         else:
             box.label(text="You have to select an object!", icon="ERROR")
 
@@ -69,6 +75,11 @@ def register():
         name="Label",
         description="Text used as the label for the tab in the Sidebar"
     )
+    bpy.types.Scene.character_ui_always_show = BoolProperty(
+        name="Always Show",
+        default=False,
+        description="Always show the UI panel instead of hiding it when the character is not selected"
+    )
     for c in classes:
         register_class(c)
 
@@ -76,5 +87,7 @@ def register():
 def unregister():
     del bpy.types.Scene.character_ui_object_id
     del bpy.types.Scene.character_ui_custom_label
+    del bpy.types.Scene.character_ui_always_show
+
     for c in reversed(classes):
         unregister_class(c)
