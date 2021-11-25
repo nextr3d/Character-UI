@@ -174,8 +174,8 @@ class CharacterUIAttributesUtils:
                             else:
                                 if p["name"]:
                                     try:
-                                        row.prop(eval(
-                                            path), prop, text=p["name"], invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon, emboss=emboss)
+                                        row.prop(eval(path), prop, text=p["name"], invert_checkbox=invert_checkbox,
+                                                 toggle=toggle, slider=slider, icon=icon, emboss=emboss)
                                     except:
                                         continue
 

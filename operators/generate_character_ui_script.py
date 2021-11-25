@@ -1,5 +1,6 @@
 import os
 import bpy
+from datetime import datetime
 from bpy.types import (Operator)
 from bpy.props import (StringProperty, BoolProperty)
 from bpy.utils import (register_class, unregister_class)
@@ -27,6 +28,9 @@ class OPS_OT_GenerateScript(Operator):
                 if str(type(o.data)) != "<class 'NoneType'>":
                     if self.character_id_key in o.data:
                         if o.data[self.character_id_key] == self.character_id:
+                            o.data["character_ui_generation_date"] = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
+                            if "character_ui_char_version" not in o.data:
+                                o.data["character_ui_char_version"] = ""
                             o.data["character_ui_textfile"] = text
             self.report({"INFO"}, "Generated script")
         else:

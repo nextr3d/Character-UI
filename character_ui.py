@@ -683,7 +683,7 @@ class VIEW3D_PT_miscellaneous(VIEW3D_PT_characterUI):
 
 class VIEW3D_PT_links(VIEW3D_PT_characterUI):
     "Panel containing links and build info of the UI"
-    bl_label = "Links"
+    bl_label = "Info"
     bl_idname = "VIEW3D_PT_links"
 
     def draw(self, context):
@@ -703,11 +703,21 @@ class VIEW3D_PT_links(VIEW3D_PT_characterUI):
                     except:
                         column.operator(
                             "wm.url_open", text=link).url = data[links_key][section][link][1]
-        layout.label(text='Character-UI v%s%s' % (".".join(str(i)
-                     for i in bl_info["version"]), '-%s' % (bl_info["branch"]) if "branch" in bl_info else ""), icon='SETTINGS')
-        layout.operator(
+        box_model_info = layout.box()
+        box_model_info.label(text="Character", icon="ARMATURE_DATA")
+        if "character_ui_generation_date" in data:
+            box_model_info.label(text="UI Generation date: %s" % (data["character_ui_generation_date"]), icon="TIME")
+        if "character_ui_char_version" in data:
+            if len(data["character_ui_char_version"]):
+                box_model_info.label(text="Version: %s" % (data["character_ui_char_version"]), icon="BLENDER")
+
+        box_ui_info = layout.box()
+        box_ui_info.label(text="UI", icon="MENU_PANEL")
+        box_ui_info.label(text='Character-UI v%s%s' % (".".join(str(i)
+                                                                for i in bl_info["version"]), '-%s' % (bl_info["branch"]) if "branch" in bl_info else ""), icon='SETTINGS')
+        box_ui_info.operator(
             "wm.url_open", text="UI bugs/suggestions").url = "https://github.com/nextr3d/Character-UI/issues/new/choose"
-        layout.operator(
+        box_ui_info.operator(
             "wm.url_open", text="Download Character-UI add-on").url = "https://github.com/nextr3d/Character-UI"
 
 

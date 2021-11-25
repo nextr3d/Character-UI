@@ -36,10 +36,6 @@ class VIEW3D_PT_character_ui_generate(Panel):
         if context.scene.character_ui_object:
             o = context.scene.character_ui_object
             box.label(text="Generate UI for %s" % (o.name))
-            row = box.row(align=True)
-
-            row.prop(context.scene, "character_ui_custom_label")
-            row.prop(context.scene, "character_ui_always_show", toggle=True)
             box.prop(context.scene, "character_ui_object_id")
 
             row = box.row()
@@ -51,6 +47,19 @@ class VIEW3D_PT_character_ui_generate(Panel):
                 always_show = context.scene.character_ui_always_show
 
                 row.label(text="Rig ID: %s" % (character_id))
+                visual_box = box.box()
+                visual_box.label(text="UI Settings")
+                row = visual_box.row(align=True)
+
+                row.prop(context.scene, "character_ui_custom_label")
+                row.prop(context.scene, "character_ui_always_show", toggle=True)
+                if "character_ui_generation_date" in o.data:
+                    row_disabled = visual_box.row()
+                    row_disabled.enabled = False
+                    row_disabled.prop(o.data, '["character_ui_generation_date"]', text="UI Generation date", icon="TIME")
+                if "character_ui_char_version" in o.data:
+                    visual_box.prop(o.data, '["character_ui_char_version"]', text="Version", icon="BLENDER")
+
                 op = box.operator("characterui_generate.generate_script")
                 op.character_id = character_id
                 op.character_id_key = character_id_key
