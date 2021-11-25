@@ -36,9 +36,11 @@ class VIEW3D_PT_character_ui_generate(Panel):
         if context.scene.character_ui_object:
             o = context.scene.character_ui_object
             box.label(text="Generate UI for %s" % (o.name))
+            row = box.row(align=True)
+
+            row.prop(context.scene, "character_ui_custom_label")
+            row.prop(context.scene, "character_ui_always_show", toggle=True)
             box.prop(context.scene, "character_ui_object_id")
-            box.prop(context.scene, "character_ui_custom_label")
-            box.prop(context.scene, "character_ui_always_show")
 
             row = box.row()
             row.operator(OPS_OT_GenerateID.bl_idname)
