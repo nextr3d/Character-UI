@@ -37,12 +37,10 @@ class VIEW3D_PT_character_ui_shape_keys(Panel):
         layout = self.layout
         ch = context.scene.character_ui_object
         body = ch.data["body_object"]
-        layout.template_list("MESH_UL_shape_keys", "", ch.data["body_object"].data.shape_keys,
-                             "key_blocks", context.scene, "character_ui_active_shape_key_index")
-        shape_key_name = body.data.shape_keys.key_blocks[
-            context.scene.character_ui_active_shape_key_index].name
-        op = layout.operator("character_ui.use_as_deformer",
-                             text="Use %s as deformer" % (shape_key_name), emboss=True)
+        layout.template_list("MESH_UL_shape_keys", "", ch.data["body_object"].data.shape_keys, "key_blocks",
+                             context.scene, "character_ui_active_shape_key_index")
+        shape_key_name = body.data.shape_keys.key_blocks[context.scene.character_ui_active_shape_key_index].name
+        op = layout.operator("character_ui.use_as_deformer", text="Use %s as deformer" % (shape_key_name), emboss=True)
         op.shape_key = shape_key_name
 
 

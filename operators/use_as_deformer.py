@@ -44,8 +44,7 @@ class OPS_OT_UseAsDeformer(Operator):
                     shape_keys = ch.data["character_ui_shape_keys"].to_list()
                 except:
                     shape_keys = ch.data["character_ui_shape_keys"]
-                shape_keys.append(
-                    {"shape_key": shape_key_name, "driver_id": outfit_piece})
+                shape_keys.append({"shape_key": shape_key_name, "driver_id": outfit_piece})
                 ch.data["character_ui_shape_keys"] = shape_keys
         return {"FINISHED"}
 
@@ -56,8 +55,7 @@ classes = [
 
 
 def register():
-    bpy.types.Scene.character_ui_shape_key_outfit_piece = PointerProperty(
-        type=bpy.types.Object, name="Outfit piece")
+    bpy.types.Scene.character_ui_shape_key_outfit_piece = PointerProperty(type=bpy.types.Object, name="Outfit piece")
 
     for c in classes:
         register_class(c)

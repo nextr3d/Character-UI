@@ -15,6 +15,7 @@ class OPS_OT_UseAsCage(Operator):
 
     def invoke(self, context, event):
         ch = context.scene.character_ui_object
+        self.panel = "OP4"
         if "character_ui_cages" in ch.data:
             if "cages" in ch.data["character_ui_cages"]:
                 for c in ch.data["character_ui_cages"]["cages"]:

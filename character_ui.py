@@ -1,7 +1,7 @@
 import bpy
 import time
 import re
-from bpy.types import Operator, Panel, PropertyGroup
+from bpy.types import Operator, Panel, PropertyGroup, Object
 from bpy.utils import register_class, unregister_class
 from bpy.props import EnumProperty, BoolProperty, StringProperty, IntProperty, FloatVectorProperty
 
@@ -30,18 +30,22 @@ bl_info = {
 class CharacterUI(PropertyGroup):
     @staticmethod
     def initialize():
+        t = time.time()
         ch = CharacterUIUtils.get_character()
         key = "%s%s" % (custom_prefix, character_id)
         if ch:
+            print("Building UI for %s" % (ch.name))
             if key not in ch:
                 ch[key] = {}
             if "body_object" in ch.data and ch.data["body_object"]:
                 CharacterUI.remove_body_modifiers_drivers(ch)
                 CharacterUI.remove_body_shape_keys_drivers(ch)
+                print("Removed drivers")
             if "hair_collection" in ch.data and ch.data["hair_collection"]:
                 CharacterUI.build_hair(ch, key)
             if "outfits_collection" in ch.data and ch.data["outfits_collection"]:
                 CharacterUI.build_outfits(ch, key)
+            print("Finished building UI in %s" % (time.time()-t))
 
     @classmethod
     def build_outfits(self, ch, key):
@@ -59,6 +63,7 @@ class CharacterUI(PropertyGroup):
         except:
             pass
         self.ui_build_outfit_buttons(ch, key)
+        print("Finished building outfits")
 
     @classmethod
     def remove_body_modifiers_drivers(self, ch):
@@ -125,15 +130,8 @@ class CharacterUI(PropertyGroup):
                     ch, o, 'hide_viewport', expression, variables)
                 CharacterUIUtils.create_driver(
                     ch, o, 'hide_render', expression, variables)
-                if "character_ui_masks" in ch.data and "body_object" in ch.data:
-                    if ch.data["body_object"]:
-                        body = ch.data["body_object"]
-                        for mask in ch.data["character_ui_masks"]:
-                            if mask["driver_id"] == o and mask["modifier"] in body.modifiers:
-                                CharacterUIUtils.create_driver(o, body.modifiers[mask["modifier"]], "show_viewport", "chui_object==0", [
-                                                               {"name": "chui_object", "path": "hide_viewport"}])
-                                CharacterUIUtils.create_driver(o, body.modifiers[mask["modifier"]], "show_render", "chui_object==0", [
-                                                               {"name": "chui_object", "path": "hide_render"}])
+
+                self.setup_mask_modifiers(ch)
                 if "character_ui_shape_keys" in ch.data and "body_object" in ch.data:
                     if ch.data["body_object"]:
                         body = ch.data["body_object"]
@@ -143,6 +141,27 @@ class CharacterUI(PropertyGroup):
                                                                {"name": "chui_object", "path": "hide_render"}])
 
             index += 1
+
+    @classmethod
+    def setup_mask_modifiers(self, ch):
+        if "character_ui_masks" in ch.data and "body_object" in ch.data:
+            if ch.data["body_object"]:
+                body = ch.data["body_object"]
+                for mask in ch.data["character_ui_masks"]:
+                    expression = ""
+                    variables_viewport = []
+                    variables_render = []
+                    if type(mask["driver_id"]) == Object:
+                        expression = "chui_object==0"
+                        variables_viewport.append({"name": "chui_object", "path": "hide_viewport", "driver_id": mask["driver_id"]})
+                        variables_render.append({"name": "chui_object", "path": "hide_render", "driver_id": mask["driver_id"]})
+                    else:
+                        for (i, o) in enumerate(mask["driver_id"]):
+                            expression = "%schui_object_%i==0%s" % (expression, i, " or " if i < len(mask["driver_id"]) - 1 else "")
+                            variables_viewport.append({"name":  "chui_object_%i" % (i), "path": "hide_viewport", "driver_id": o})
+                            variables_render.append({"name":  "chui_object_%i" % (i), "path": "hide_render", "driver_id": o})
+                    CharacterUIUtils.create_driver(None, body.modifiers[mask["modifier"]], "show_viewport", expression, variables_viewport)
+                    CharacterUIUtils.create_driver(None, body.modifiers[mask["modifier"]], "show_render", expression, variables_render)
 
     @classmethod
     def build_hair(self, ch, key):
@@ -178,6 +197,7 @@ class CharacterUI(PropertyGroup):
                                self.create_enum_options(names, "Enables: "), default)
         except:
             pass
+        print("Finished building hair")
 
     @classmethod
     def ui_setup_toggle(self, property_name, update_function, name='Name', description='Empty description', default=False):
@@ -258,10 +278,11 @@ class CharacterUIUtils:
             driver.type = "SCRIPTED"
             driver.expression = driver_expression
             for variable in variables:
+                local_driver_id = variable["driver_id"] if "driver_id" in variable else driver_id
                 var = driver.variables.new()
                 var.name = variable["name"]
-                var.targets[0].id_type = driver_id.rna_type.name.upper()
-                var.targets[0].id = variable["driver_id"] if "driver_id" in variable else driver_id
+                var.targets[0].id_type = local_driver_id.rna_type.name.upper()
+                var.targets[0].id = local_driver_id
                 var.targets[0].data_path = "%s%s" % (
                     variable["path"], addition_path)
         if type(driver) == list:
