@@ -9,11 +9,17 @@ class VIEW3D_PT_character_ui_physics(Panel):
     bl_region_type = 'UI'
     bl_category = "Character-UI"
     bl_label = "Character UI Physics"
+    bl_options = {'HEADER_LAYOUT_EXPAND'}
 
     @classmethod
     def poll(self, context):
         collection = context.scene.character_ui_physics_collection
         return collection != None
+
+    def draw_header(self, context):
+        self.layout.label(text="")
+        row = self.layout.row(align=True)
+        row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "character_ui_physics"
 
     def draw(self, context):
         layout = self.layout

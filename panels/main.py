@@ -88,7 +88,9 @@ class VIEW3D_PT_character_ui_main(Panel):
     def draw(self, context):
         layout = self.layout
         box = layout.box()
-        box.prop(context.scene, "character_ui_object")
+        o_row = box.row(align=True)
+        o_row.prop(context.scene, "character_ui_object")
+        o_row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "character_ui_object"
         ch = context.scene.character_ui_object
         if ch:
             if ch.type != "ARMATURE":

@@ -26,12 +26,18 @@ class VIEW3D_PT_character_ui_shape_keys(Panel):
     bl_label = "Shape Keys"
     bl_idname = "VIEW3D_PT_character_ui_shape_keys"
     bl_parent_id = "VIEW3D_PT_character_ui_body"
+    bl_options = {'HEADER_LAYOUT_EXPAND'}
 
     @classmethod
     def poll(self, context):
         ch = context.scene.character_ui_object
         body = ch.data["body_object"]
         return context.scene.character_ui_object_body.type == "MESH" and hasattr(body.data.shape_keys, "key_blocks")
+
+    def draw_header(self, context):
+        self.layout.label(text="")
+        row = self.layout.row(align=True)
+        row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "character_ui_shape_keys"
 
     def draw(self, context):
         layout = self.layout
@@ -40,7 +46,7 @@ class VIEW3D_PT_character_ui_shape_keys(Panel):
         layout.template_list("MESH_UL_shape_keys", "", ch.data["body_object"].data.shape_keys, "key_blocks",
                              context.scene, "character_ui_active_shape_key_index")
         shape_key_name = body.data.shape_keys.key_blocks[context.scene.character_ui_active_shape_key_index].name
-        op = layout.operator("character_ui.use_as_deformer", text="Use %s as deformer" % (shape_key_name), emboss=True)
+        op = layout.operator("character_ui.use_as_driver", text="Use %s as deformer" % (shape_key_name), emboss=True)
         op.shape_key = shape_key_name
 
 
@@ -50,10 +56,16 @@ class VIEW3D_PT_character_ui_masks(Panel):
     bl_label = "Masks"
     bl_idname = "VIEW3D_PT_character_ui_masks"
     bl_parent_id = "VIEW3D_PT_character_ui_body"
+    bl_options = {'HEADER_LAYOUT_EXPAND'}
 
     @classmethod
     def poll(self, context):
         return context.scene.character_ui_object_body.type == "MESH"
+
+    def draw_header(self, context):
+        self.layout.label(text="")
+        row = self.layout.row(align=True)
+        row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "character_ui_masks"
 
     def draw(self, context):
         pass
@@ -72,7 +84,7 @@ class VIEW3D_PT_character_ui_masks_masks(Panel):
         body = ch.data["body_object"]
         for m in body.modifiers:
             if m.type in ["MASK", "VERTEX_WEIGHT_MIX"]:
-                op = layout.operator("character_ui.use_as_mask", text=m.name)
+                op = layout.operator("character_ui.use_as_driver", text=m.name)
                 op.modifier = m.name
 
 
@@ -89,7 +101,7 @@ class VIEW3D_PT_character_ui_masks_other(Panel):
         body = ch.data["body_object"]
         for m in body.modifiers:
             if m.type not in ["MASK", "VERTEX_WEIGHT_MIX"]:
-                op = layout.operator("character_ui.use_as_mask", text=m.name)
+                op = layout.operator("character_ui.use_as_driver", text=m.name)
                 op.modifier = m.name
 
 

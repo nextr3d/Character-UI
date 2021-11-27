@@ -8,6 +8,7 @@ class OPS_OT_AddLink(Operator):
     bl_idname = "character_ui.add_link"
     bl_label = "Add new link"
     bl_description = "Adds new link"
+    bl_options = {"INTERNAL"}
 
     link_section: StringProperty()
     link_text: StringProperty(name="Button Text")
@@ -32,7 +33,9 @@ class OPS_OT_AddLink(Operator):
         return context.window_manager.invoke_props_dialog(self, width=350)
 
     def draw(self, context):
-        self.layout.prop(self, 'link_icon')
+        icon_row = self.layout.row(align=True)
+        icon_row.prop(self, 'link_icon')
+        icon_row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "icons"
         try:
             self.layout.label(text="-   Icon Preview", icon=self.link_icon)
         except:
@@ -45,6 +48,7 @@ class OPS_OT_RemoveLink(Operator):
     bl_idname = "character_ui.remove_link"
     bl_label = "Remove link"
     bl_description = "Removes link"
+    bl_options = {"INTERNAL"}
 
     link_section: StringProperty()
     link: StringProperty()
@@ -84,6 +88,7 @@ class OPS_OT_RemoveLinksSection(Operator):
     bl_idname = 'character_ui.remove_links_section'
     bl_label = "Remove section"
     bl_description = "Removes links section"
+    bl_options = {"INTERNAL"}
 
     link_section: StringProperty()
 

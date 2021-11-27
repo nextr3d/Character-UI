@@ -54,11 +54,16 @@ class VIEW3D_PT_character_ui_generate(Panel):
                 row.prop(context.scene, "character_ui_custom_label")
                 row.prop(context.scene, "character_ui_always_show", toggle=True)
                 if "character_ui_generation_date" in o.data:
-                    row_disabled = visual_box.row()
-                    row_disabled.enabled = False
-                    row_disabled.prop(o.data, '["character_ui_generation_date"]', text="UI Generation date", icon="TIME")
+                    generation_row = visual_box.row(align=True)
+                    column_disabled = generation_row.column()
+                    column_disabled.enabled = False
+                    column_disabled.prop(o.data, '["character_ui_generation_date"]', text="UI Generation date", icon="TIME")
+                    generation_row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "character_ui_generation_date"
+
                 if "character_ui_char_version" in o.data:
-                    visual_box.prop(o.data, '["character_ui_char_version"]', text="Version", icon="BLENDER")
+                    version_row = visual_box.row(align=True)
+                    version_row.prop(o.data, '["character_ui_char_version"]', text="Version", icon="BLENDER")
+                    version_row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "character_ui_version"
 
                 op = box.operator("characterui_generate.generate_script")
                 op.character_id = character_id

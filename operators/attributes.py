@@ -8,6 +8,7 @@ class OPS_OT_AddNewAttribute(Operator):
     bl_idname = "character_ui.add_new_attribute"
     bl_label = "Select object to trigger shape key change for:"
     bl_description = "Sets the shape key to be toggled on/off based on an outfit piece"
+    bl_options = {"INTERNAL"}
 
     panel_name: StringProperty()
     group_name: StringProperty()
@@ -90,6 +91,8 @@ class OPS_OT_RemoveAttribute(Operator):
     bl_idname = 'character_ui.remove_attribute'
     bl_label = 'Remove attribute from the UI'
     bl_description = "Removes attribute from the UI and other synced attributes too"
+    bl_options = {"INTERNAL"}
+
     path: StringProperty()
     panel_name: StringProperty()
     group_name: StringProperty()
@@ -119,6 +122,8 @@ class OPS_OT_AttributeChangePosition(Operator):
     bl_idname = 'character_ui.attribute_change_position'
     bl_label = "Change attributes position in the list"
     bl_description = "Changes position of the attribute in the current list"
+    bl_options = {"INTERNAL"}
+
     path: StringProperty()
     panel_name: StringProperty()
     direction: BoolProperty()  # True moves up, False move down
@@ -203,6 +208,7 @@ class OPS_OT_EditAttribute(Operator):
     bl_idname = "character_ui.edit_attribute"
     bl_label = 'Edit attribute'
     bl_description = 'Edit attribute'
+    bl_options = {"INTERNAL"}
 
     path: StringProperty(name="Path", description="RNA path of the attribute")
     panel_name: StringProperty()
@@ -211,8 +217,7 @@ class OPS_OT_EditAttribute(Operator):
     invert_checkbox: BoolProperty(description="Forces checkbox to be inverted")
     toggle: BoolProperty(description="Style checkbox as a toggle")
     slider: BoolProperty(description="Use slider widget for numeric values")
-    emboss: BoolProperty(
-        description="Draw the button itself, not just the icon/text")
+    emboss: BoolProperty(description="Draw the button itself, not just the icon/text")
     icon: StringProperty(description="Override automatic icon of the item")
 
     def invoke(self, context, event):
@@ -230,8 +235,7 @@ class OPS_OT_EditAttribute(Operator):
                                 self.toggle = att["toggle"] if "toggle" in att else False
                                 self.slider = att["slider"] if "slider" in att else False
                                 self.emboss = att["emboss"] if "emboss" in att else True
-                                self.icon = (
-                                    "" if att["icon"] == "NONE" else att["icon"]) if "icon" in att else ""
+                                self.icon = ("" if att["icon"] == "NONE" else att["icon"]) if "icon" in att else ""
         return context.window_manager.invoke_props_dialog(self, width=750)
 
     def draw(self, context):
@@ -258,16 +262,14 @@ class OPS_OT_EditAttribute(Operator):
                                     style_box.label(text="Style")
                                     row = style_box.row()
 
-                                    row.prop(self, "invert_checkbox",
-                                             text="Invert checkbox", toggle=True)
-                                    row.prop(self, "toggle",
-                                             text="Toggle", toggle=True)
-                                    row.prop(self, "slider",
-                                             text="Slider", toggle=True)
-                                    row.prop(self, "emboss",
-                                             text="Emboss", toggle=True)
+                                    row.prop(self, "invert_checkbox", text="Invert checkbox", toggle=True)
+                                    row.prop(self, "toggle", text="Toggle", toggle=True)
+                                    row.prop(self, "slider", text="Slider", toggle=True)
+                                    row.prop(self, "emboss", text="Emboss", toggle=True)
+                                    icon_row = style_box.row(align=True)
+                                    icon_row.prop(self, "icon", text="Icon")
+                                    icon_row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "icons"
 
-                                    style_box.prop(self, "icon", text="Icon")
                                     try:
                                         style_box.label(
                                             text="-   Icon Preview", icon=self.icon)
@@ -326,6 +328,7 @@ class OPS_OT_RemoveSyncedAttribute(Operator):
     bl_idname = "character_ui.remove_synced_attribute"
     bl_label = ""
     bl_description = "Removes synced attribute"
+    bl_options = {"INTERNAL"}
 
     path: StringProperty()
     parent_path: StringProperty()

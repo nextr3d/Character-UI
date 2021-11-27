@@ -1,5 +1,5 @@
 from . import links
-from . import helper
+from . import tooltip
 from . import attributes
 from . import use_as_cage
 from . import use_as_driver
@@ -9,7 +9,7 @@ from . import generate_character_ui_script
 
 modules = [
     links,
-    helper,
+    tooltip,
     attributes,
     use_as_cage,
     use_as_driver,

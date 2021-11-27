@@ -30,6 +30,12 @@ class VIEW3D_PT_character_ui_rig_layers(Panel):
     bl_region_type = 'UI'
     bl_category = "Character-UI"
     bl_label = "Character UI Rig Layers"
+    bl_options = {'HEADER_LAYOUT_EXPAND'}
+
+    def draw_header(self, context):
+        self.layout.label(text="")
+        row = self.layout.row(align=True)
+        row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "character_ui_rig_layers"
 
     @classmethod
     def poll(self, context):

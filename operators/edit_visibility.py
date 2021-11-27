@@ -14,6 +14,7 @@ class OPS_OT_EditVisibilityVariables(Operator):
     bl_idname = "character_ui.edit_visibility_variables"
     bl_label = ""
     bl_description = "Edits visibility"
+    bl_options = {"INTERNAL"}
 
     path: StringProperty(name="Path", description="RNA path of the attribute")
     panel_name: StringProperty()
@@ -88,8 +89,9 @@ class OPS_OT_EditVisibilityVariables(Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.prop(self, "expression")
-
+        expression_row = layout.row(align=True)
+        expression_row.prop(self, "expression")
+        expression_row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "character_ui_expression"
         for var in enumerate(context.scene.character_ui_variables):
             box = layout.box()
             box.prop(var[1], "variable")
@@ -110,6 +112,7 @@ class OPS_OT_AddNewVariable(Operator):
     bl_idname = "character_ui.add_new_variable"
     bl_label = "Add new variable"
     bl_description = "Adds new variable"
+    bl_options = {"INTERNAL"}
 
     path: StringProperty(name="Path", description="RNA path of the attribute")
     panel_name: StringProperty()
@@ -165,6 +168,7 @@ class OPS_OT_RemoveVariable(Operator):
     bl_idname = "character_ui.remove_variable"
     bl_label = "Remove variable"
     bl_description = "Removes variable"
+    bl_options = {"INTERNAL"}
 
     path: StringProperty(name="Path", description="RNA path of the attribute")
     panel_name: StringProperty()

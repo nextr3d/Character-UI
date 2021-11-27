@@ -8,6 +8,7 @@ class OPS_OT_UseAsCage(Operator):
     bl_idname = "character_ui.use_as_cage"
     bl_label = "Select object to be used as physics cage"
     bl_description = "Options for object which could be used as mesh deform cage"
+    bl_options = {"INTERNAL"}
 
     cage: StringProperty()
     panel: EnumProperty(name="Panel", items=[("OP1", "Outfits", "Toggles in the Outfits Panel"), ("OP2", "Body", "Toggles in the Body Panel"), (

@@ -38,9 +38,9 @@ class CharacterUI(PropertyGroup):
             if key not in ch:
                 ch[key] = {}
             if "body_object" in ch.data and ch.data["body_object"]:
-                CharacterUI.remove_body_modifiers_drivers(ch)
-                CharacterUI.remove_body_shape_keys_drivers(ch)
+                CharacterUI.remove_visibility_drivers_drivers(ch)
                 print("Removed drivers")
+                CharacterUI.setup_visibility_drivers(ch)
             if "hair_collection" in ch.data and ch.data["hair_collection"]:
                 CharacterUI.build_hair(ch, key)
             if "outfits_collection" in ch.data and ch.data["outfits_collection"]:
@@ -66,24 +66,24 @@ class CharacterUI(PropertyGroup):
         print("Finished building outfits")
 
     @classmethod
-    def remove_body_modifiers_drivers(self, ch):
+    def remove_visibility_drivers_drivers(self, ch):
         "removes drivers from modifiers"
-        if "character_ui_masks" in ch.data:
-            for m in ch.data["character_ui_masks"]:
-                if m["modifier"] in ch.data["body_object"].modifiers:
-                    ch.data["body_object"].modifiers[m["modifier"]
-                                                     ].driver_remove("show_viewport")
-                    ch.data["body_object"].modifiers[m["modifier"]
-                                                     ].driver_remove("show_render")
-
-    @classmethod
-    def remove_body_shape_keys_drivers(self, ch):
-        "removes drivers from shape keys"
-        if "character_ui_shape_keys" in ch.data:
-            for s in ch.data["character_ui_shape_keys"]:
-                if s["shape_key"] in ch.data["body_object"].data.shape_keys.key_blocks:
-                    ch.data["body_object"].data.shape_keys.key_blocks[s["shape_key"]].driver_remove(
-                        "value")
+        for key in ["character_ui_masks", "character_ui_shape_keys"]:
+            if key in ch.data:
+                for item in ch.data[key]:
+                    if "name" not in item:
+                        name = item["modifier"] if "modifier" in item else item["shape_key"]
+                        item["name"] = name
+                        if "modifier" in item:
+                            del item["modifier"]
+                        elif "shape_key" in item:
+                            del item["shape_key"]
+                    if item["name"] in ch.data["body_object"].modifiers:
+                        if key == "character_ui_masks":
+                            ch.data["body_object"].modifiers[item["name"]].driver_remove("show_viewport")
+                            ch.data["body_object"].modifiers[item["name"]].driver_remove("show_render")
+                        else:
+                            ch.data["body_object"].data.shape_keys.key_blocks[item["name"]].driver_remove("value")
 
     @classmethod
     def ui_build_outfit_buttons(self, ch, key):
@@ -104,11 +104,9 @@ class CharacterUI(PropertyGroup):
                     name, None, o.name_full, "Toggles outfit piece on and off", default)
                 self.ui_setup_toggle(
                     name+"_lock", None, "", "Locks the outfit piece to be visible even when changing outfits", default_lock)
-                variables = [{"name": "chui_outfit", "path": "%s.outfits_enum" % (
-                    key)}, {"name": "chui_object", "path": "%s.%s" % (key, name)}]
+                variables = [{"name": "chui_outfit", "path": "%s.outfits_enum" % (key)}, {"name": "chui_object", "path": "%s.%s" % (key, name)}]
                 lock_expression = "chui_lock==1"
-                expression = "not (chui_object == 1 and (chui_outfit ==%i or chui_lock==1))" % (
-                    index)
+                expression = "not (chui_object == 1 and (chui_outfit ==%i or chui_lock==1))" % (index)
 
                 is_top_child = False
                 if o.parent:
@@ -131,37 +129,40 @@ class CharacterUI(PropertyGroup):
                 CharacterUIUtils.create_driver(
                     ch, o, 'hide_render', expression, variables)
 
-                self.setup_mask_modifiers(ch)
-                if "character_ui_shape_keys" in ch.data and "body_object" in ch.data:
-                    if ch.data["body_object"]:
-                        body = ch.data["body_object"]
-                        for shape_key in ch.data["character_ui_shape_keys"]:
-                            if shape_key["driver_id"] == o and shape_key["shape_key"] in body.data.shape_keys.key_blocks:
-                                CharacterUIUtils.create_driver(o, body.data.shape_keys.key_blocks[shape_key["shape_key"]], "value", "chui_object==0", [
-                                                               {"name": "chui_object", "path": "hide_render"}])
-
             index += 1
 
     @classmethod
-    def setup_mask_modifiers(self, ch):
-        if "character_ui_masks" in ch.data and "body_object" in ch.data:
-            if ch.data["body_object"]:
-                body = ch.data["body_object"]
-                for mask in ch.data["character_ui_masks"]:
-                    expression = ""
-                    variables_viewport = []
-                    variables_render = []
-                    if type(mask["driver_id"]) == Object:
-                        expression = "chui_object==0"
-                        variables_viewport.append({"name": "chui_object", "path": "hide_viewport", "driver_id": mask["driver_id"]})
-                        variables_render.append({"name": "chui_object", "path": "hide_render", "driver_id": mask["driver_id"]})
-                    else:
-                        for (i, o) in enumerate(mask["driver_id"]):
-                            expression = "%schui_object_%i==0%s" % (expression, i, " or " if i < len(mask["driver_id"]) - 1 else "")
+    def setup_visibility_drivers(self, ch):
+        for key in ["character_ui_masks", "character_ui_shape_keys"]:
+            if key in ch.data and "body_object" in ch.data:
+                if ch.data["body_object"]:
+                    body = ch.data["body_object"]
+                    for item in ch.data[key]:
+                        expression = ""
+                        variables_viewport = []
+                        variables_render = []
+                        if type(item["driver_id"]) == Object:
+                            new_items = [item["driver_id"]]
+                            item["driver_id"] = new_items
+
+                        for (i, o) in enumerate(item["driver_id"]):
+                            expression = "%schui_object_%i==0%s" % (expression, i, " or " if i < len(item["driver_id"]) - 1 else "")
                             variables_viewport.append({"name":  "chui_object_%i" % (i), "path": "hide_viewport", "driver_id": o})
                             variables_render.append({"name":  "chui_object_%i" % (i), "path": "hide_render", "driver_id": o})
-                    CharacterUIUtils.create_driver(None, body.modifiers[mask["modifier"]], "show_viewport", expression, variables_viewport)
-                    CharacterUIUtils.create_driver(None, body.modifiers[mask["modifier"]], "show_render", expression, variables_render)
+
+                        if key == "character_ui_masks":
+                            if "name" not in item:
+                                name = item["modifier"]
+                                item["name"] = name
+                                del item["modifier"]
+                            CharacterUIUtils.create_driver(None, body.modifiers[item["name"]], "show_viewport", expression, variables_viewport)
+                            CharacterUIUtils.create_driver(None, body.modifiers[item["name"]], "show_render", expression, variables_render)
+                        else:
+                            if "name" not in item:
+                                name = item["shape_key"]
+                                item["name"] = name
+                                del item["shape_key"]
+                            CharacterUIUtils.create_driver(None, body.data.shape_keys.key_blocks[item["name"]], "value", expression, variables_render)
 
     @classmethod
     def build_hair(self, ch, key):
@@ -698,11 +699,9 @@ class VIEW3D_PT_links(VIEW3D_PT_characterUI):
                 column = box.column(align=True)
                 for link in data[links_key][section].to_dict():
                     try:
-                        column.operator(
-                            "wm.url_open", text=link, icon=data[links_key][section][link][0]).url = data[links_key][section][link][1]
+                        column.operator("wm.url_open", text=link, icon=data[links_key][section][link][0]).url = data[links_key][section][link][1]
                     except:
-                        column.operator(
-                            "wm.url_open", text=link).url = data[links_key][section][link][1]
+                        column.operator("wm.url_open", text=link).url = data[links_key][section][link][1]
         box_model_info = layout.box()
         box_model_info.label(text="Character", icon="ARMATURE_DATA")
         if "character_ui_generation_date" in data:

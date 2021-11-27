@@ -8,6 +8,7 @@ class OPS_OT_AddNewAttributeGroup(Operator):
     bl_idname = "character_ui.add_new_attribute_group"
     bl_label = "Add new Attribute Group"
     bl_description = "Creates new attribute group"
+    bl_options = {"INTERNAL"}
 
     panel_name: StringProperty()
 
@@ -37,6 +38,7 @@ class OPS_OT_ExpandAttributeGroup(Operator):
     bl_idname = "character_ui.expand_attribute_group"
     bl_label = "Expand/Contract"
     bl_description = "Expands or Contracts Attribute Group"
+    bl_options = {"INTERNAL"}
 
     panel_name: StringProperty()
     group_name: StringProperty()
@@ -61,6 +63,7 @@ class OPS_OT_EditAttributeGroup(Operator):
     bl_idname = "character_ui.edit_attribute_group"
     bl_label = "Edit attribute group"
     bl_description = "Edit attribute group"
+    bl_options = {"INTERNAL"}
 
     panel_name: StringProperty()
     group_name: StringProperty()
@@ -84,7 +87,9 @@ class OPS_OT_EditAttributeGroup(Operator):
 
     def draw(self, context):
         self.layout.prop(self, "new_group_name")
-        self.layout.prop(self, "group_icon")
+        row = self.layout.row(align=True)
+        row.prop(self, "group_icon")
+        row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "icons"
         try:
             self.layout.label(text="-   Icon Preview", icon=self.group_icon)
         except:
@@ -124,6 +129,7 @@ class OPS_OT_RemoveAttributeGroup(Operator):
     bl_idname = 'character_ui.remove_attribute_group'
     bl_label = 'Remove attribute group from the UI'
     bl_description = "Removes attribute group from the UI and all of the attributes inside and other synced attributes too"
+    bl_options = {"INTERNAL"}
 
     group_name: StringProperty()
     panel_name: StringProperty()
@@ -151,6 +157,7 @@ class OPS_OT_AttributeGroupChangePosition(Operator):
     bl_idname = 'character_ui.attribute_group_change_position'
     bl_label = "Change attribute group's position in the list"
     bl_description = "Changes position of the attribute group in the current list"
+    bl_options = {"INTERNAL"}
 
     group_name: StringProperty()
     panel_name: StringProperty()

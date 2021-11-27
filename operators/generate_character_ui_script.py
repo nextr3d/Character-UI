@@ -11,6 +11,7 @@ class OPS_OT_GenerateScript(Operator):
     bl_idname = 'characterui_generate.generate_script'
     bl_label = 'Generate UI'
     bl_description = 'Generates the UI script'
+    bl_options = {"INTERNAL"}
 
     character_id: StringProperty()
     character_id_key: StringProperty()
