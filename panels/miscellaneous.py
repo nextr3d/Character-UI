@@ -10,6 +10,7 @@ class VIEW3D_PT_character_ui_miscellaneous(Panel):
     bl_region_type = 'UI'
     bl_category = "Character-UI"
     bl_label = "Character UI Miscellaneous"
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(self, context):

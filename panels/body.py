@@ -10,6 +10,7 @@ class VIEW3D_PT_character_ui_body(Panel):
     bl_category = "Character-UI"
     bl_label = "Character UI Body"
     bl_idname = "VIEW3D_PT_character_ui_body"
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(self, context):
@@ -26,7 +27,7 @@ class VIEW3D_PT_character_ui_shape_keys(Panel):
     bl_label = "Shape Keys"
     bl_idname = "VIEW3D_PT_character_ui_shape_keys"
     bl_parent_id = "VIEW3D_PT_character_ui_body"
-    bl_options = {'HEADER_LAYOUT_EXPAND'}
+    bl_options = {'HEADER_LAYOUT_EXPAND, "DEFAULT_CLOSED'}
 
     @classmethod
     def poll(self, context):
@@ -56,7 +57,7 @@ class VIEW3D_PT_character_ui_masks(Panel):
     bl_label = "Masks"
     bl_idname = "VIEW3D_PT_character_ui_masks"
     bl_parent_id = "VIEW3D_PT_character_ui_body"
-    bl_options = {'HEADER_LAYOUT_EXPAND'}
+    bl_options = {'HEADER_LAYOUT_EXPAND', "DEFAULT_CLOSED"}
 
     @classmethod
     def poll(self, context):

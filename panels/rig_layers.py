@@ -30,7 +30,7 @@ class VIEW3D_PT_character_ui_rig_layers(Panel):
     bl_region_type = 'UI'
     bl_category = "Character-UI"
     bl_label = "Character UI Rig Layers"
-    bl_options = {'HEADER_LAYOUT_EXPAND'}
+    bl_options = {'HEADER_LAYOUT_EXPAND', 'DEFAULT_CLOSED'}
 
     def draw_header(self, context):
         self.layout.label(text="")

@@ -9,7 +9,7 @@ class VIEW3D_PT_character_ui_physics(Panel):
     bl_region_type = 'UI'
     bl_category = "Character-UI"
     bl_label = "Character UI Physics"
-    bl_options = {'HEADER_LAYOUT_EXPAND'}
+    bl_options = {'HEADER_LAYOUT_EXPAND', 'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(self, context):
