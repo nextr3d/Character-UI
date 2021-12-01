@@ -27,7 +27,7 @@ class VIEW3D_PT_character_ui_shape_keys(Panel):
     bl_label = "Shape Keys"
     bl_idname = "VIEW3D_PT_character_ui_shape_keys"
     bl_parent_id = "VIEW3D_PT_character_ui_body"
-    bl_options = {'HEADER_LAYOUT_EXPAND, "DEFAULT_CLOSED'}
+    bl_options = {"HEADER_LAYOUT_EXPAND", "DEFAULT_CLOSED"}
 
     @classmethod
     def poll(self, context):

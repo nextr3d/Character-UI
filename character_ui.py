@@ -703,7 +703,7 @@ class VIEW3D_PT_links(VIEW3D_PT_characterUI):
                     except:
                         column.operator("wm.url_open", text=link).url = data[links_key][section][link][1]
         box_model_info = layout.box()
-        box_model_info.label(text="Character", icon="ARMATURE_DATA")
+        box_model_info.label(text=custom_label, icon="ARMATURE_DATA")
         if "character_ui_generation_date" in data:
             box_model_info.label(text="UI Generation date: %s" % (data["character_ui_generation_date"]), icon="TIME")
         if "character_ui_char_version" in data:

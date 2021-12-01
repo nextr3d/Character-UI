@@ -70,6 +70,8 @@ class VIEW3D_PT_character_ui_generate(Panel):
                 op.character_id_key = character_id_key
                 op.rig_layers_key = rig_layers_key
                 op.always_show = always_show
+                custom_label = context.scene.character_ui_custom_label
+                op.custom_label = custom_label if custom_label not in ["", " "] else context.scene.character_ui_object.name
 
         else:
             box.label(text="You have to select an object!", icon="ERROR")
