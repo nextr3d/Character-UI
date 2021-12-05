@@ -9,18 +9,20 @@ from . import generate
 
 modules = [
     main,
-	body,
-	rig_layers,
-	attributes,
-	physics,
-	miscellaneous,
-	generate
+    body,
+    rig_layers,
+    attributes,
+    physics,
+    miscellaneous,
+    generate
 ]
 
+
 def register():
-	for m in modules:
-		m.register()
+    for m in modules:
+        m.register()
+
 
 def unregister():
-	for m in reversed(modules):
-		m.unregister()
+    for m in reversed(modules):
+        m.unregister()
