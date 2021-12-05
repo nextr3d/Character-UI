@@ -21,8 +21,7 @@ bl_info = {
     "name": "Character UI Script",
     "description": "Script rendering UI for your character",
     "author": "nextr",
-    "version": (5, 1, 0),
-    "branch": "improvements",
+    "version": (5, 2, 0),
     "blender": (3, 0, 0)
 }
 
@@ -428,7 +427,7 @@ class CharacterUIUtils:
 
 
 class VIEW3D_PT_characterUI(Panel):
-    "Main panle"
+    "Main panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = custom_label
