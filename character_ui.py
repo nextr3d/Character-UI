@@ -341,7 +341,7 @@ class CharacterUIUtils:
             if "visibility" in g:
                 expression = g["visibility"]["expression"]
                 for var in g["visibility"]["variables"]:
-                    expression =  expression.replace(str(var["variable"]), str(var["data_path"]))
+                    expression = expression.replace(str(var["variable"]), str(var["data_path"]))
                 render = eval(expression)
             if render:
                 box = layout.box()
@@ -573,16 +573,14 @@ class VIEW3D_PT_physics_misc_panel(VIEW3D_PT_characterUI):
         if ch:
             if "character_ui_cages" in ch.data:
                 if "cages" in ch.data["character_ui_cages"]:
-                    out = list(filter(lambda x: "OP3" in x,
-                               ch.data["character_ui_cages"]["cages"]))
+                    out = list(filter(lambda x: "OP3" in x, ch.data["character_ui_cages"]["cages"]))
                     return len(out) > 0
         return False
 
     def draw(self, context):
         layout = self.layout
         ch = CharacterUIUtils.get_character()
-        CharacterUIUtils.render_cages(
-            layout, ch.data["character_ui_cages"]["cages"], 3)
+        CharacterUIUtils.render_cages(layout, ch.data["character_ui_cages"]["cages"], 3)
 
 
 class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
@@ -594,7 +592,7 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
     def poll(self, context):
         ch = CharacterUIUtils.get_character()
         if ch:
-            if ch == context.active_object:
+            if ch == context.active_object or always_show:
                 if attributes_key in ch:
                     if "rig" in ch[attributes_key]:
                         if len(ch[attributes_key]["rig"]):
@@ -656,7 +654,7 @@ class VIEW3D_PT_miscellaneous(VIEW3D_PT_characterUI):
     def poll(self, context):
         ch = CharacterUIUtils.get_character()
         if ch:
-            if ch == context.active_object:
+            if ch == context.active_object or always_show:
                 if attributes_key in ch:
                     if "misc" in ch[attributes_key]:
                         if len(ch[attributes_key]["misc"]):
@@ -666,6 +664,7 @@ class VIEW3D_PT_miscellaneous(VIEW3D_PT_characterUI):
                         out = list(filter(lambda x: "OP3" in x,
                                    ch.data["character_ui_cages"]["cages"]))
                         return len(out) > 0
+
         return False
 
     def draw(self, context):
