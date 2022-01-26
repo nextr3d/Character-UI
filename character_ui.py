@@ -21,7 +21,7 @@ bl_info = {
     "name": "Character UI Script",
     "description": "Script rendering UI for your character",
     "author": "nextr",
-    "version": (5, 2, 0),
+    "version": (5, 2, 1),
     "blender": (3, 0, 0)
 }
 
@@ -360,11 +360,14 @@ class CharacterUIUtils:
                     for a in g["attributes"]:
                         render_attribute = True
                         if "visibility" in a:
-                            expression_a = a["visibility"]["expression"]
-                            for var in a["visibility"]["variables"]:
-                                expression_a = expression_a.replace(
-                                    var["variable"], var["data_path"])
-                            render_attribute = eval(expression_a)
+                            if "expression" in a["visibility"]:
+                                expression_a = a["visibility"]["expression"]
+                                for var in a["visibility"]["variables"]:
+                                    expression_a = expression_a.replace(var["variable"], var["data_path"])
+                                try:
+                                    render_attribute = eval(expression_a)
+                                except:
+                                    render_attribute = True
                         if render_attribute:
                             row = box.row(align=True)
                             delimiter = '][' if '][' in a['path'] else '.'
@@ -387,7 +390,7 @@ class CharacterUIUtils:
                                     row.prop(eval(
                                         path), prop, invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon)
                                 except:
-                                    print("couldn't render ", path, " prop")
+                                    print("couldn't render %s prop"(path))
 
     @staticmethod
     def create_unique_ids(panels, operators):
