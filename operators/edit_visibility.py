@@ -76,11 +76,12 @@ class OPS_OT_EditVisibilityVariables(Operator):
                             for att in g["attributes"]:
                                 if self.path == att["path"]:
                                     if "visibility" in att:
-                                        self.expression = att["visibility"]["expression"]
-                                        for var in att["visibility"]["variables"]:
-                                            collection_var = context.scene.character_ui_variables.add()
-                                            collection_var.variable = var["variable"]
-                                            collection_var.data_path = var["data_path"]
+                                        if "expression" in att["visibility"]:
+                                            self.expression = att["visibility"]["expression"]
+                                            for var in att["visibility"]["variables"]:
+                                                collection_var = context.scene.character_ui_variables.add()
+                                                collection_var.variable = var["variable"]
+                                                collection_var.data_path = var["data_path"]
 
         return context.window_manager.invoke_props_dialog(self, width=450)
 
@@ -143,13 +144,17 @@ class OPS_OT_AddNewVariable(Operator):
                             for att in g["attributes"]:
                                 if self.path == att["path"]:
                                     if "visibility" in att:
-                                        variables = att["visibility"]["variables"]
-                                        try:
-                                            variables.append(
-                                                {"variable": "var", "data_path": ""})
-                                        except:
-                                            variables.to_list().append(
-                                                {"variable": "var", "data_path": ""})
+                                        variables = []
+                                        if "variables" in att["visibility"]:
+                                            variables = att["visibility"]["variables"]
+                                            try:
+                                                variables.append(
+                                                    {"variable": "var", "data_path": ""})
+                                            except:
+                                                variables.to_list().append(
+                                                    {"variable": "var", "data_path": ""})
+                                        else:
+                                            variables.append({"variable": "var", "data_path": ""})
                                         att["visibility"]["variables"] = variables
                                     else:
                                         att["visibility"] = {"expression": "", "variables": [

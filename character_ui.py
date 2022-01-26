@@ -21,7 +21,7 @@ bl_info = {
     "name": "Character UI Script",
     "description": "Script rendering UI for your character",
     "author": "nextr",
-    "version": (5, 2, 0),
+    "version": (5, 2, 1),
     "blender": (3, 0, 0)
 }
 
@@ -341,7 +341,7 @@ class CharacterUIUtils:
             if "visibility" in g:
                 expression = g["visibility"]["expression"]
                 for var in g["visibility"]["variables"]:
-                    expression =  expression.replace(str(var["variable"]), str(var["data_path"]))
+                    expression = expression.replace(str(var["variable"]), str(var["data_path"]))
                 render = eval(expression)
             if render:
                 box = layout.box()
@@ -360,11 +360,14 @@ class CharacterUIUtils:
                     for a in g["attributes"]:
                         render_attribute = True
                         if "visibility" in a:
-                            expression_a = a["visibility"]["expression"]
-                            for var in a["visibility"]["variables"]:
-                                expression_a = expression_a.replace(
-                                    var["variable"], var["data_path"])
-                            render_attribute = eval(expression_a)
+                            if "expression" in a["visibility"]:
+                                expression_a = a["visibility"]["expression"]
+                                for var in a["visibility"]["variables"]:
+                                    expression_a = expression_a.replace(var["variable"], var["data_path"])
+                                try:
+                                    render_attribute = eval(expression_a)
+                                except:
+                                    render_attribute = True
                         if render_attribute:
                             row = box.row(align=True)
                             delimiter = '][' if '][' in a['path'] else '.'
@@ -387,7 +390,7 @@ class CharacterUIUtils:
                                     row.prop(eval(
                                         path), prop, invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon)
                                 except:
-                                    print("couldn't render ", path, " prop")
+                                    print("couldn't render %s prop"(path))
 
     @staticmethod
     def create_unique_ids(panels, operators):
@@ -573,16 +576,14 @@ class VIEW3D_PT_physics_misc_panel(VIEW3D_PT_characterUI):
         if ch:
             if "character_ui_cages" in ch.data:
                 if "cages" in ch.data["character_ui_cages"]:
-                    out = list(filter(lambda x: "OP3" in x,
-                               ch.data["character_ui_cages"]["cages"]))
+                    out = list(filter(lambda x: "OP3" in x, ch.data["character_ui_cages"]["cages"]))
                     return len(out) > 0
         return False
 
     def draw(self, context):
         layout = self.layout
         ch = CharacterUIUtils.get_character()
-        CharacterUIUtils.render_cages(
-            layout, ch.data["character_ui_cages"]["cages"], 3)
+        CharacterUIUtils.render_cages(layout, ch.data["character_ui_cages"]["cages"], 3)
 
 
 class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
@@ -594,7 +595,7 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
     def poll(self, context):
         ch = CharacterUIUtils.get_character()
         if ch:
-            if ch == context.active_object:
+            if ch == context.active_object or always_show:
                 if attributes_key in ch:
                     if "rig" in ch[attributes_key]:
                         if len(ch[attributes_key]["rig"]):
@@ -656,7 +657,7 @@ class VIEW3D_PT_miscellaneous(VIEW3D_PT_characterUI):
     def poll(self, context):
         ch = CharacterUIUtils.get_character()
         if ch:
-            if ch == context.active_object:
+            if ch == context.active_object or always_show:
                 if attributes_key in ch:
                     if "misc" in ch[attributes_key]:
                         if len(ch[attributes_key]["misc"]):
@@ -666,6 +667,7 @@ class VIEW3D_PT_miscellaneous(VIEW3D_PT_characterUI):
                         out = list(filter(lambda x: "OP3" in x,
                                    ch.data["character_ui_cages"]["cages"]))
                         return len(out) > 0
+
         return False
 
     def draw(self, context):
