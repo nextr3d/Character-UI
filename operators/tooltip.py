@@ -54,6 +54,14 @@ tooltip_texts = {
         "body": "Add objects to a shape key which will be used to show or hide the shape key. These shape keys are taken from the body object.\nEach shape key can contain multiple objects and gets enabled when at least one of the added objects is visible.",
         "doc_url": ["https://github.com/nextr3d/Character-UI/wiki/Add-on#character-ui-body"]
     },
+    "outfit_piece_parent": {
+        "header": "Outfit piece parent",
+        "body": "By default parent of each outfit piece should be the Character UI Object so you can grab it and move it and everything follows.\nIf you set the parent to be another object it will be only visible when the parent is visible.\nThis is useful for example when your character has pants and a belt, then it makes no sense to have the belt without pants but pants can be without the belt.",
+    },
+     "outfits": {
+        "header": "Outfits",
+        "body": "Each outfit is a collection containing multiple objects. Each object represents one outfit piece and will have a button in the UI.\nThe main outfits collection can't contain any \"unassigned\" objects, if it does, the add-on will notify you and offer one click fix.\nOutfit collections can't (for now) contain other collections.",
+    },
 }
 
 

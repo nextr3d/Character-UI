@@ -177,7 +177,6 @@ classes = [
 
 def register():
     bpy.types.Scene.character_ui_driver_object = PointerProperty(type=Object, name="Outfit piece")
-
     for c in classes:
         register_class(c)
 

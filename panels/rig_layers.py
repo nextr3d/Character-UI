@@ -117,6 +117,7 @@ def register():
 
 
 def unregister():
+    del bpy.types.Scene.character_ui_rig_layers_key
     for i in range(32):
         delattr(bpy.types.Scene, "character_ui_row_visible_%i" % (i))
         delattr(bpy.types.Scene, "character_ui_row_name_%i" % (i))

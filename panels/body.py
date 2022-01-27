@@ -122,5 +122,6 @@ def register():
 
 
 def unregister():
+    del bpy.types.Scene.character_ui_active_shape_key_index
     for c in reversed(classes):
         unregister_class(c)

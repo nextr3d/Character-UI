@@ -56,7 +56,6 @@ classes = [
 
 
 def register():
-
     for c in classes:
         register_class(c)
 

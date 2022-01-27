@@ -83,5 +83,6 @@ def register():
 
 
 def unregister():
+    del bpy.types.Scene.character_ui_links_key
     for c in reversed(classes):
         unregister_class(c)

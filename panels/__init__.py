@@ -1,15 +1,17 @@
 from . import main
 from . import body
+from . import outfits
+from . import physics
+from . import generate
 from . import rig_layers
 from . import attributes
-from . import physics
 from . import miscellaneous
-from . import generate
 
 
 modules = [
     main,
     body,
+    outfits,
     rig_layers,
     attributes,
     physics,

@@ -21,8 +21,9 @@ bl_info = {
     "name": "Character UI Script",
     "description": "Script rendering UI for your character",
     "author": "nextr",
-    "version": (5, 2, 2),
-    "blender": (3, 0, 0)
+    "version": (5, 3, 0),
+    "blender": (3, 0, 0),
+    "branch": "outfits"
 }
 
 
