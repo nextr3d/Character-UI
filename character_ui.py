@@ -21,7 +21,7 @@ bl_info = {
     "name": "Character UI Script",
     "description": "Script rendering UI for your character",
     "author": "nextr",
-    "version": (5, 2, 1),
+    "version": (5, 2, 2),
     "blender": (3, 0, 0)
 }
 
@@ -460,30 +460,29 @@ class VIEW3D_PT_outfits(VIEW3D_PT_characterUI):
                     CharacterUIUtils.safe_render(layout, props, "outfits_enum")
                 box = layout.box()
                 for o in outfits.children[props['outfits_enum']].objects:
-                    is_top_child = True  # True because if no parent than it's the top child
-                    if not o.parent == None:
+                    is_top_child = True  # True because if no parent then it's the top child
+                    if not o.parent == None or not o.parent == ch:
                         # parent is in different collection so it has to
                         is_top_child = not o.users_collection[0] == o.parent.users_collection[0]
                     if is_top_child:
                         CharacterUIUtils.render_outfit_piece(o, box, props)
 
-                    locked_pieces = {}
+                locked_pieces = {}
 
-                    for i, c in enumerate(outfits.children):
-                        pieces = []
-                        for o in c.objects:
-                            if i != props["outfits_enum"]:
-                                name = o.name.replace(
-                                    " ", "_")+"_outfit_toggle"
-                                if props[name+"_lock"]:
-                                    pieces.append(o)
-                        if len(pieces):
-                            locked_pieces[c.name] = pieces
+                for i, c in enumerate(outfits.children):
+                    pieces = []
+                    for o in c.objects:
+                        if i != props["outfits_enum"]:
+                            name = o.name.replace(" ", "_")+"_outfit_toggle"
+                            if props[name+"_lock"]:
+                                pieces.append(o)
+                    if len(pieces):
+                        locked_pieces[c.name] = pieces
 
-                    for n, pcs in locked_pieces.items():
-                        box.label(text=n)
-                        for p in pcs:
-                            CharacterUIUtils.render_outfit_piece(p, box, props)
+                for n, pcs in locked_pieces.items():
+                    box.label(text=n)
+                    for p in pcs:
+                        CharacterUIUtils.render_outfit_piece(p, box, props)
             if attributes_key in ch:
                 if "outfits" in ch[attributes_key]:
                     attributes_box = layout.box()
