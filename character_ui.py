@@ -461,7 +461,7 @@ class VIEW3D_PT_outfits(VIEW3D_PT_characterUI):
                 box = layout.box()
                 for o in outfits.children[props['outfits_enum']].objects:
                     is_top_child = True  # True because if no parent then it's the top child
-                    if not o.parent == None or not o.parent == ch:
+                    if not o.parent == None and not o.parent == ch:
                         # parent is in different collection so it has to
                         is_top_child = not o.users_collection[0] == o.parent.users_collection[0]
                     if is_top_child:
@@ -501,11 +501,12 @@ class VIEW3D_PT_body(VIEW3D_PT_characterUI):
         ch = CharacterUIUtils.get_character()
         if ch:
             props = CharacterUIUtils.get_props_from_character()
-            hair_row = layout.row(align=True)
-            CharacterUIUtils.safe_render(hair_row, props, "hair_enum")
-            if hasattr(props, "hair_lock") and hasattr(props, "hair_enum"):
-                CharacterUIUtils.safe_render(
-                    hair_row, props, "hair_lock", icon="LOCKED" if props.hair_lock else "UNLOCKED", toggle=True)
+            if (len(ch.data["hair_collection"].children) + len(ch.data["hair_collection"].objects)) > 1:
+                hair_row = layout.row(align=True)
+                CharacterUIUtils.safe_render(hair_row, props, "hair_enum")
+                if hasattr(props, "hair_lock") and hasattr(props, "hair_enum"):
+                    CharacterUIUtils.safe_render(
+                        hair_row, props, "hair_lock", icon="LOCKED" if props.hair_lock else "UNLOCKED", toggle=True)
             if attributes_key in ch:
                 if "body" in ch[attributes_key]:
                     attributes_box = layout.box()
