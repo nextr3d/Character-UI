@@ -462,7 +462,7 @@ class VIEW3D_PT_outfits(VIEW3D_PT_characterUI):
                 box = layout.box()
                 for o in outfits.children[props['outfits_enum']].objects:
                     is_top_child = True  # True because if no parent then it's the top child
-                    if not o.parent == None or not o.parent == ch:
+                    if not o.parent == None and not o.parent == ch:
                         # parent is in different collection so it has to
                         is_top_child = not o.users_collection[0] == o.parent.users_collection[0]
                     if is_top_child:
@@ -497,22 +497,44 @@ class VIEW3D_PT_body(VIEW3D_PT_characterUI):
     bl_label = "Body"
     bl_idname = "VIEW3D_PT_body"
 
+    @classmethod
+    def poll(self, context):
+        ch = CharacterUIUtils.get_character()
+        if ch:
+            render = False
+            if attributes_key in ch:
+                if "body" in ch[attributes_key]:
+                    render = len(ch[attributes_key]["body"]) > 0
+            if ch.data["hair_collection"] and not render:
+                if (len(ch.data["hair_collection"].children) + len(ch.data["hair_collection"].objects)) > 1:
+                    render = True
+            if "character_ui_cages" in ch.data and not render:
+                if "cages" in ch.data["character_ui_cages"]:
+                    out = list(filter(lambda x: "OP2" in x,
+                               ch.data["character_ui_cages"]["cages"]))
+                    render = len(out) > 0
+            return render and (ch == context.object or always_show)
+        return False
+
     def draw(self, context):
         layout = self.layout
         ch = CharacterUIUtils.get_character()
         if ch:
             props = CharacterUIUtils.get_props_from_character()
-            hair_row = layout.row(align=True)
-            CharacterUIUtils.safe_render(hair_row, props, "hair_enum")
-            if hasattr(props, "hair_lock") and hasattr(props, "hair_enum"):
-                CharacterUIUtils.safe_render(
-                    hair_row, props, "hair_lock", icon="LOCKED" if props.hair_lock else "UNLOCKED", toggle=True)
+            if ch.data["hair_collection"]:
+                if (len(ch.data["hair_collection"].children) + len(ch.data["hair_collection"].objects)) > 1:
+                    hair_row = layout.row(align=True)
+                    CharacterUIUtils.safe_render(hair_row, props, "hair_enum")
+                    if hasattr(props, "hair_lock") and hasattr(props, "hair_enum"):
+                        CharacterUIUtils.safe_render(
+                            hair_row, props, "hair_lock", icon="LOCKED" if props.hair_lock else "UNLOCKED", toggle=True)
             if attributes_key in ch:
                 if "body" in ch[attributes_key]:
-                    attributes_box = layout.box()
-                    attributes_box.label(text="Attributes")
-                    CharacterUIUtils.render_attributes(
-                        attributes_box, ch[attributes_key]["body"], "body")
+                    if len(ch[attributes_key]["body"]):
+                        attributes_box = layout.box()
+                        attributes_box.label(text="Attributes")
+                        CharacterUIUtils.render_attributes(
+                            attributes_box, ch[attributes_key]["body"], "body")
 
 
 class VIEW3D_PT_physics_body_panel(VIEW3D_PT_characterUI):
