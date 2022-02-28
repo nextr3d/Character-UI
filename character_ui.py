@@ -95,13 +95,22 @@ class CharacterUI(PropertyGroup):
             for o in objects:
                 default = False
                 default_lock = False
-                name = o.name_full.replace(" ", "_")+"_outfit_toggle"
+                name = o.name_full.replace('.',"-").replace(" ", "_")+"_outfit_toggle"
                 if name in data and name+"_lock" in data:
                     default = data[name]
                     default_lock = data[name+"_lock"]
+                
+                toggle_label = o.name_full
+
+                if "chui_outfit_piece_settings" in o:
+                    if "prefix" in o["chui_outfit_piece_settings"]:
+                        prefix = o["chui_outfit_piece_settings"]["prefix"]
+                        if prefix != "" and prefix in toggle_label and toggle_label.index(prefix) == 0:
+                            toggle_label = toggle_label[len(prefix):]
+
 
                 self.ui_setup_toggle(
-                    name, None, o.name_full, "Toggles outfit piece on and off", default)
+                    name, None, toggle_label, "Toggles outfit piece on and off", default)
                 self.ui_setup_toggle(
                     name+"_lock", None, "", "Locks the outfit piece to be visible even when changing outfits", default_lock)
                 variables = [{"name": "chui_outfit", "path": "%s.outfits_enum" % (key)}, {"name": "chui_object", "path": "%s.%s" % (key, name)}]
@@ -301,7 +310,7 @@ class CharacterUIUtils:
     def render_outfit_piece(o, element, props, is_child=False):
         "recursively render outfit piece buttons"
         row = element.row(align=True)
-        name = o.name.replace(" ", "_")+"_outfit_toggle"
+        name = o.name.replace(".","-").replace(" ", "_")+"_outfit_toggle"
         if o.data:
             CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="DOWNARROW_HLT" if (props[name] and ("settings" in o.data or len(
                 o.children))) else ("RIGHTARROW" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE"))

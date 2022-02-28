@@ -8,6 +8,7 @@ from . import attribute_groups
 from . import edit_outfit_piece
 from . import parent_to_character
 from . import move_unassigned_objects
+from . import format_outfit_piece_name
 from . import generate_character_ui_script
 
 modules = [
@@ -21,6 +22,7 @@ modules = [
     edit_outfit_piece,
     parent_to_character,
     move_unassigned_objects,
+    format_outfit_piece_name,
     generate_character_ui_script
 ]
 

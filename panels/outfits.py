@@ -41,6 +41,8 @@ class VIEW3D_PT_character_ui_outfits(Panel):
         outfit_pieces_row.template_list("UI_UL_list", "character_ui_outfit_pieces", outfits_collection.children[active_outfit], "objects", context.scene, "character_ui_active_outfit_piece_index")
         outfit_pieces_row.operator("character_ui.edit_outfit_piece", text="", icon="PREFERENCES")
         outfit_pieces_box.operator("character_ui.parent_to_character")
+        outfit_pieces_box.operator("character_ui.format_outfit_piece_name")
+
         
 
 
