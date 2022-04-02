@@ -62,6 +62,10 @@ tooltip_texts = {
         "header": "Outfits",
         "body": "Each outfit is a collection containing multiple objects. Each object represents one outfit piece and will have a button in the UI.\nThe main outfits collection can't contain any \"unassigned\" objects, if it does, the add-on will notify you and offer one click fix.\nOutfit collections can't (for now) contain other collections.",
     },
+     "cant_contain_directly": {
+        "header": "Master Collection",
+        "body": "To make scenes more organized the add-on requires that all of the outfits are contained in one Master Collection.\nThis means that you have one collection (named Suzanne Outfits for example) and this one is set in the outfits box and this collection contains only other collections and each one is threated as a separate outfit and these collection contain only objects.",
+    },
 }
 
 

@@ -1,6 +1,7 @@
 from . import links
 from . import tooltip
 from . import attributes
+from . import fix_new_id
 from . import use_as_cage
 from . import use_as_driver
 from . import edit_visibility
@@ -15,6 +16,7 @@ modules = [
     links,
     tooltip,
     attributes,
+    fix_new_id,
     use_as_cage,
     use_as_driver,
     edit_visibility,
