@@ -409,10 +409,13 @@ class CharacterUIUtils:
     def render_cages(layout, cages, panel=1):
         for c in cages:
             if c[1] == "OP%i" % (panel):
+                _addName = ""
                 for m in c[0].modifiers:
-                    if m.type == "CLOTH":
+                    if (m.type == "CLOTH" or m.type == "SOFT_BODY"):
                         box = layout.box()
-                        box.label(text=c[0].name)
+                        if m.type == "CLOTH" : _addName = "cloth"
+                        else: _addName = "soft body"
+                        box.label(text=c[0].name + " - " + _addName + " modifier")
                         row = box.row(align=True)
                         row.prop(m, "show_viewport")
                         row.prop(m, "show_render")
