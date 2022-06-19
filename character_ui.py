@@ -409,10 +409,13 @@ class CharacterUIUtils:
     def render_cages(layout, cages, panel=1):
         for c in cages:
             if c[1] == "OP%i" % (panel):
+                _addName = ""
                 for m in c[0].modifiers:
-                    if m.type == "CLOTH":
+                    if (m.type == "CLOTH" or m.type == "SOFT_BODY"):
                         box = layout.box()
-                        box.label(text=c[0].name)
+                        if m.type == "CLOTH" : _addName = "cloth"
+                        else: _addName = "soft body"
+                        box.label(text=c[0].name + " - " + _addName + " modifier")
                         row = box.row(align=True)
                         row.prop(m, "show_viewport")
                         row.prop(m, "show_render")
@@ -772,7 +775,7 @@ class OPS_PT_BakePhysics(bpy.types.Operator):
 
     def execute(self, context):
         for m in bpy.data.objects[self.object_name].modifiers:
-            if m.type == "CLOTH" and not m.point_cache.is_baked:
+            if (m.type == "CLOTH" or m.type == "SOFT_BODY") and not m.point_cache.is_baked:
                 if not m.show_viewport:
                     self.report(
                         {'WARNING'}, "Modifier is not visible in the viewport, baking will have no effect!")
@@ -782,7 +785,7 @@ class OPS_PT_BakePhysics(bpy.types.Operator):
                     bpy.ops.ptcache.bake(override, bake=True)
                     self.report(
                         {'INFO'}, "Done baking physics for: "+self.object_name)
-            elif m.type == "CLOTH" and m.point_cache.is_baked:
+            elif (m.type == "CLOTH" or m.type == "SOFT_BODY") and m.point_cache.is_baked:
                 override = {'scene': context.scene,
                             'active_object': bpy.data.objects[self.object_name], 'point_cache': m.point_cache}
                 bpy.ops.ptcache.free_bake(override)
