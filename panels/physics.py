@@ -30,7 +30,7 @@ class VIEW3D_PT_character_ui_physics(Panel):
                 if hasattr(i, "type"):
                     if i.type == "MESH":
                         for m in i.modifiers:
-                            if m.type == "CLOTH":
+                            if m.type == "CLOTH" or m.type == "SOFT_BODY":
                                 op = layout.operator(
                                     "character_ui.use_as_cage", text=i.name)
                                 op.cage = i.name
