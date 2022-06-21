@@ -6,6 +6,7 @@ from . import generate
 from . import rig_layers
 from . import attributes
 from . import miscellaneous
+import importlib
 
 
 modules = [
@@ -22,6 +23,7 @@ modules = [
 
 def register():
     for m in modules:
+        importlib.reload(m)
         m.register()
 
 

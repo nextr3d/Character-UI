@@ -11,6 +11,7 @@ from . import parent_to_character
 from . import move_unassigned_objects
 from . import format_outfit_piece_name
 from . import generate_character_ui_script
+import importlib
 
 modules = [
     links,
@@ -31,6 +32,7 @@ modules = [
 
 def register():
     for m in modules:
+        importlib.reload(m)
         m.register()
 
 
