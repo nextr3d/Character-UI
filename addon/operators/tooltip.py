@@ -66,6 +66,10 @@ tooltip_texts = {
         "header": "Master Collection",
         "body": "To make scenes more organized the add-on requires that all of the outfits are contained in one Master Collection.\nThis means that you have one collection (named Suzanne Outfits for example) and this one is set in the outfits box and this collection contains only other collections and each one is threated as a separate outfit and these collection contain only objects.",
     },
+    "chui_id": {
+        "header": "Character UI ID",
+        "body":"Character UI needs to know which objects in the current scene should be threated as a Character UI character.\nFor this a random ID is used, the random ID is stored in a custom property on the object."
+    }
 }
 
 

@@ -1,9 +1,21 @@
+from addon.constants import CharacterProperties, SceneProperties
 import bpy
-from bpy.types import (Panel, PropertyGroup, Operator)
+from bpy.types import (Context, Panel, PropertyGroup, Operator)
 from bpy.props import (PointerProperty, StringProperty,
                        BoolProperty, IntProperty)
 from bpy.utils import (register_class, unregister_class)
 
+
+class OPS_OT_AddLinks(Operator):
+    bl_idname = "character_ui.add_links"
+    bl_label = ""
+    bl_description = ""
+    bl_options = {"INTERNAL"}
+
+    def execute(self, context ):
+        o = context.scene[SceneProperties.OBJECT.value]
+        if not o: return {"ERROR"}
+        o[CharacterProperties.CHARACTER_LINKS.value] = []
 
 class VIEW3D_PT_character_ui_miscellaneous(Panel):
     bl_space_type = 'VIEW_3D'
@@ -13,12 +25,11 @@ class VIEW3D_PT_character_ui_miscellaneous(Panel):
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
-    def poll(self, context):
-        ch = context.scene.character_ui_object
-        return ch
+    def poll(cls, context:Context):
+        return context.scene[SceneProperties.OBJECT.value]
 
     def draw(self, context):
-        layout = self.layout
+        return
 
 
 class VIEW3D_PT_character_ui_links_panel(Panel):
@@ -30,8 +41,13 @@ class VIEW3D_PT_character_ui_links_panel(Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.prop(context.scene, "character_ui_links_key")
-        ch = context.scene.character_ui_object
+        o = context.scene[SceneProperties.OBJECT.value]
+        if not o: return
+
+        if CharacterProperties.CHARACTER_LINKS.value not in o:
+            return layout.operator(OPS_OT_AddLinks.bl_idname)
+        
+        
         key = context.scene.character_ui_links_key
         if ch:
             if key and key in ch.data:
@@ -69,20 +85,17 @@ class VIEW3D_PT_character_ui_links_panel(Panel):
 
 
 classes = [
+    OPS_OT_AddLinks,
     VIEW3D_PT_character_ui_miscellaneous,
     VIEW3D_PT_character_ui_links_panel
 ]
 
 
 def register():
-    bpy.types.Scene.character_ui_links_key = StringProperty(name="Links Key",
-                                                            description="Under which custom property the links are stored",
-                                                            default="character_ui_links")
     for c in classes:
         register_class(c)
 
 
 def unregister():
-    del bpy.types.Scene.character_ui_links_key
     for c in reversed(classes):
         unregister_class(c)

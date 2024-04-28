@@ -1,0 +1,10 @@
+schema_version = "1.0.0"
+
+id = "character_ui"
+version = "2.0.0"
+name = "Character-UI"
+tagline = "Create simple yet functional menus for your characters"
+maintainer = "nextr3d nextr3d@gmail.com"
+type = "add-on"
+licence = ["GPL-3.0-or-later"]
+blender_version_min = "4.2.0"
