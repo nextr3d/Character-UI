@@ -8,6 +8,10 @@ class CharacterProperties(Enum):
     PHYSICS_COLLECTION = 'chui_physics'
     BODY_COLLECTION = 'chui_body'
     CHARACTER_LINKS = 'chui_links'
+class CharacterLinkProperties(Enum):
+    TEXT = 'text'
+    ICON = 'icon'
+    HREF = 'href'
 
 class SceneProperties(Enum):
     OBJECT = "character_ui_object"

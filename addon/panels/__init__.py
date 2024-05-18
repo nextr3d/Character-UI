@@ -1,13 +1,15 @@
 from . import main
 from . import generate
 from . import armature
+from . import miscellaneous
 import importlib
 
 
 modules = [
     main,
     generate,
-    armature
+    armature,
+    miscellaneous
 ]
 
 

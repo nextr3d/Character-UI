@@ -69,6 +69,10 @@ tooltip_texts = {
     "chui_id": {
         "header": "Character UI ID",
         "body":"Character UI needs to know which objects in the current scene should be threated as a Character UI character.\nFor this a random ID is used, the random ID is stored in a custom property on the object."
+    },
+    "chui_links":{
+        "header": "Character UI Links",
+        "body":"You can add links to the UI, it is going to render a special sections with button which open the default browser on click and navigate to some URL"
     }
 }
 

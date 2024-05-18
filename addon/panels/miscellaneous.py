@@ -1,21 +1,10 @@
-from addon.constants import CharacterProperties, SceneProperties
-import bpy
-from bpy.types import (Context, Panel, PropertyGroup, Operator)
-from bpy.props import (PointerProperty, StringProperty,
-                       BoolProperty, IntProperty)
+from ..operators.tooltip import OPS_OT_Tooltip
+from ..operators.add_link import OPS_OT_AddLink
+from ..operators.remove_links import OPS_OT_RemoveLinks
+from ..constants import CharacterLinkProperties, CharacterProperties, SceneProperties
+from bpy.types import (Context, Object, Panel)
 from bpy.utils import (register_class, unregister_class)
 
-
-class OPS_OT_AddLinks(Operator):
-    bl_idname = "character_ui.add_links"
-    bl_label = ""
-    bl_description = ""
-    bl_options = {"INTERNAL"}
-
-    def execute(self, context ):
-        o = context.scene[SceneProperties.OBJECT.value]
-        if not o: return {"ERROR"}
-        o[CharacterProperties.CHARACTER_LINKS.value] = []
 
 class VIEW3D_PT_character_ui_miscellaneous(Panel):
     bl_space_type = 'VIEW_3D'
@@ -25,69 +14,54 @@ class VIEW3D_PT_character_ui_miscellaneous(Panel):
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
-    def poll(cls, context:Context):
-        return context.scene[SceneProperties.OBJECT.value]
-
-    def draw(self, context):
-        return
-
-
-class VIEW3D_PT_character_ui_links_panel(Panel):
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_label = "Links"
-    bl_idname = "VIEW3D_PT_character_ui_links_panel"
-    bl_parent_id = "VIEW3D_PT_character_ui_miscellaneous"
+    def poll(cls, context: Context):
+        return hasattr(context.scene, SceneProperties.OBJECT.value) and context.scene[SceneProperties.OBJECT.value]
 
     def draw(self, context):
         layout = self.layout
-        o = context.scene[SceneProperties.OBJECT.value]
-        if not o: return
+        o: Object = context.scene[SceneProperties.OBJECT.value]
+        
+        box = layout.box()
+        box.label(text="Links", icon="LINK_BLEND")
+        links_box = box.box()
+        links_count = 0
+        if CharacterProperties.CHARACTER_LINKS.value in o and (links := o[CharacterProperties.CHARACTER_LINKS.value]):
+            links_count = len(links)
+            for i in range(links_count):
+                link = links[i]
+                row = links_box.row(align=True)
+                url = icon = label = ""
+                try:
+                    label: str = link[CharacterLinkProperties.TEXT.value] if CharacterLinkProperties.TEXT.value in link else ""
+                    icon: str = link[CharacterLinkProperties.ICON.value] if  CharacterLinkProperties.ICON.value in link else "NONE"
+                    url = link[CharacterLinkProperties.HREF.value] if  CharacterLinkProperties.HREF.value in link else ""
+                    row.operator("wm.url_open", text=label, icon=icon).url = url
+                except:
+                    row.alert = True
+                    row.label(text="Invalid link data!")
+                edit = row.operator(OPS_OT_AddLink.bl_idname, text="", icon="PREFERENCES")
+                edit.edit_link = i
+                edit.link_href = url
+                edit.link_text = label
+                edit.link_icon = icon
+                del_op = row.operator(OPS_OT_RemoveLinks.bl_idname, text="", icon="TRASH")
+                del_op.remove_link = -i
+        
+        if not links_count:
+            links_box.label(text="No links setup")
 
-        if CharacterProperties.CHARACTER_LINKS.value not in o:
-            return layout.operator(OPS_OT_AddLinks.bl_idname)
         
+        row = box.row(align=True)
         
-        key = context.scene.character_ui_links_key
-        if ch:
-            if key and key in ch.data:
-                box = layout.box()
-                box.label(text="Links", icon="URL")
-                if len(ch.data[key]):
-                    for s in ch.data[key].to_dict():
-                        section_box = box.box()
-                        row = section_box.row(align=True)
-                        row.label(text=s)
-                        row.operator("character_ui.edit_links_section",
-                                     text="", icon="PREFERENCES").link_section = s
-                        row.operator("character_ui.remove_links_section",
-                                     text="", icon="TRASH").link_section = s
-                        for l in ch.data[key][s].to_dict():
-                            link_row = section_box.row(align=True)
-                            try:
-                                link_row.label(
-                                    text=l, icon=ch.data[key][s][l][0])
-                            except:
-                                link_row.label(text=l)
-                            url = ch.data[key][s][l][1]
-                            link_row.operator(
-                                "wm.url_open", text=url).url = url
-                            remove_link = link_row.operator(
-                                "character_ui.remove_link", text="", icon="X")
-                            remove_link.link_section = s
-                            remove_link.link = l
-                        section_box.operator(
-                            "character_ui.add_link", text="Add link", icon="PLUS").link_section = s
-                box.operator("character_ui.add_links_section",
-                             text="Add Links Section")
-            else:
-                layout.operator("character_ui.enable_links", icon="PLUS")
+        row.operator(OPS_OT_AddLink.bl_idname, text="Add new link", icon="PLUS").edit_link = -1
+        row.operator(OPS_OT_Tooltip.bl_idname, text="", icon="QUESTION").tooltip_id = "chui_links"
+        if links_count:
+            box.operator(OPS_OT_RemoveLinks.bl_idname,text="Remove all links", icon="TRASH").remove_link = -1
+        return
 
 
 classes = [
-    OPS_OT_AddLinks,
     VIEW3D_PT_character_ui_miscellaneous,
-    VIEW3D_PT_character_ui_links_panel
 ]
 
 
