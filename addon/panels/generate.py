@@ -36,19 +36,17 @@ class VIEW3D_PT_character_ui_generate(Panel):
     def draw(self, context):
         layout = self.layout
         box = layout.box()
-        o:Object | None = context.scene[SceneProperties.OBJECT.value]
+        o: Object | None = context.scene[SceneProperties.OBJECT.value]
         if not o:
             return  box.label(text="You have to select an object!", icon="ERROR")
 
-        if CharacterProperties.CHARACTER_ID.value not in o.data:
-            row = box.row(align=True)
-            row.operator(OPS_OT_GenerateID.bl_idname)
-            row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "chui_id"
-            return
-
         box.label(text="Generate UI for %s" % (o.name))
-
-        box.prop(o.data, "[\"%s\"]"%(CharacterProperties.CHARACTER_ID.value))
+        row = box.row(align=True)
+        if CharacterProperties.CHARACTER_ID.value not in o:
+            row.operator(OPS_OT_GenerateID.bl_idname)
+        else:
+            row.prop(o, "[\"%s\"]"%(CharacterProperties.CHARACTER_ID.value), text="Character UI ID")
+        row.operator("character_ui.tooltip", text="", icon="QUESTION").tooltip_id = "chui_id"
        
 
            
