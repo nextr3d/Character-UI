@@ -1,4 +1,5 @@
 from . import main
+from . import outfits
 from . import generate
 from . import armature
 from . import miscellaneous
@@ -7,6 +8,7 @@ import importlib
 
 modules = [
     main,
+    outfits,
     generate,
     armature,
     miscellaneous
