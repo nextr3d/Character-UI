@@ -18,7 +18,7 @@ class VIEW3D_PT_character_ui_armature(Panel):
 
         o: Object | None = context.scene[SceneProperties.OBJECT.value]
 
-        return o and o.type == "ARMATURE" and hasattr(o, CharacterProperties.CHARACTER_ID.value)
+        return o and o.type == "ARMATURE" and CharacterProperties.CHARACTER_ID.value in o
 
     def draw(self, context):
         layout = self.layout
