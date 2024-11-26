@@ -47,6 +47,8 @@ class VIEW3D_PT_character_ui_generate(Panel):
                 always_show = context.scene.character_ui_always_show
 
                 row.label(text="Rig ID: %s" % (character_id))
+                if character_id != context.scene.character_ui_object_id_value:
+                    box.operator("character_ui.fix_new_id")
                 visual_box = box.box()
                 visual_box.label(text="UI Settings")
                 row = visual_box.row(align=True)
@@ -75,7 +77,10 @@ class VIEW3D_PT_character_ui_generate(Panel):
 
         else:
             box.label(text="You have to select an object!", icon="ERROR")
-
+def character_ui_id_update(self, context):
+    o = context.scene.character_ui_object
+    key = context.scene.character_ui_object_id
+    context.scene.character_ui_object_id_value = o.data[key]
 
 classes = (
     OPS_OT_GenerateID,
@@ -88,7 +93,9 @@ def register():
         name="Custom Property Name",
         description="Custom Property used for storing the Character UI ID, if your character has a unique ID you can use it too",
         default="character_id",
+        update=character_ui_id_update
     )
+    bpy.types.Scene.character_ui_object_id_value = StringProperty()
     bpy.types.Scene.character_ui_custom_label = StringProperty(
         name="Label",
         description="Text used as the label for the tab in the Sidebar"

@@ -275,7 +275,7 @@ class CharacterUIAttributesUtils:
     def render_outfits_attributes_panels(context):
         ch = context.scene.character_ui_object
         if ch:
-            if context.scene.character_ui_object_id in ch.data:
+            if context.scene.character_ui_object_id in ch.data and "outfits_collection" in ch.data:
                 if ch.data["outfits_collection"]:
                     return True
         return False
@@ -284,7 +284,7 @@ class CharacterUIAttributesUtils:
     def render_body_attributes_panels(context):
         ch = context.scene.character_ui_object
         if ch:
-            if ch.data["body_object"] or ch.data["hair_collection"]:
+            if ("body_object" in ch.data and ch.data["body_object"])  or ( "hair_collection" in ch.data and ch.data["hair_collection"]):
                 return True
         return False
 

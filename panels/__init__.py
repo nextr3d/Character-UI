@@ -1,15 +1,18 @@
 from . import main
 from . import body
+from . import outfits
+from . import physics
+from . import generate
 from . import rig_layers
 from . import attributes
-from . import physics
 from . import miscellaneous
-from . import generate
+import importlib
 
 
 modules = [
     main,
     body,
+    outfits,
     rig_layers,
     attributes,
     physics,
@@ -20,6 +23,7 @@ modules = [
 
 def register():
     for m in modules:
+        importlib.reload(m)
         m.register()
 
 

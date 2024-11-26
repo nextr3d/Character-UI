@@ -5,20 +5,18 @@ bl_info = {
     "name": "Character-UI",
     "description": "Addon for creating simple yet functional menus for your characters",
     "author": "nextr",
-    "version": (1, 2, 3),
-    "blender": (3, 0, 0),
+    "version": (1, 4, 0),
+    "blender": (4, 3, 0),
     "location": "View3d > Sidebar > Character-UI",
     "category": 'Interface',
     "doc_url": "https://github.com/nextr3d/Character-UI/wiki",
     "tracker_url": "https://github.com/nextr3d/Character-UI/issues"
 }
 
-
 modules = [
     panels,
     operators
 ]
-
 
 def register():
     for m in modules:

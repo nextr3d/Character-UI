@@ -21,8 +21,8 @@ bl_info = {
     "name": "Character UI Script",
     "description": "Script rendering UI for your character",
     "author": "nextr",
-    "version": (5, 2, 3),
-    "blender": (3, 0, 0)
+    "version": (5, 4, 0),
+    "blender": (4, 3, 0),
 }
 
 
@@ -79,10 +79,13 @@ class CharacterUI(PropertyGroup):
                             del item["shape_key"]
                     if item["name"] in ch.data["body_object"].modifiers:
                         if key == "character_ui_masks":
-                            ch.data["body_object"].modifiers[item["name"]].driver_remove("show_viewport")
-                            ch.data["body_object"].modifiers[item["name"]].driver_remove("show_render")
+                            ch.data["body_object"].modifiers[item["name"]
+                                                             ].driver_remove("show_viewport")
+                            ch.data["body_object"].modifiers[item["name"]
+                                                             ].driver_remove("show_render")
                         else:
-                            ch.data["body_object"].data.shape_keys.key_blocks[item["name"]].driver_remove("value")
+                            ch.data["body_object"].data.shape_keys.key_blocks[item["name"]].driver_remove(
+                                "value")
 
     @classmethod
     def ui_build_outfit_buttons(self, ch, key):
@@ -94,18 +97,29 @@ class CharacterUI(PropertyGroup):
             for o in objects:
                 default = False
                 default_lock = False
-                name = o.name_full.replace(" ", "_")+"_outfit_toggle"
+                name = o.name_full.replace(
+                    '.', "-").replace(" ", "_")+"_outfit_toggle"
                 if name in data and name+"_lock" in data:
                     default = data[name]
                     default_lock = data[name+"_lock"]
 
+                toggle_label = o.name_full
+
+                if "chui_outfit_piece_settings" in o:
+                    if "prefix" in o["chui_outfit_piece_settings"]:
+                        prefix = o["chui_outfit_piece_settings"]["prefix"]
+                        if prefix != "" and prefix in toggle_label and toggle_label.index(prefix) == 0:
+                            toggle_label = toggle_label[len(prefix):]
+
                 self.ui_setup_toggle(
-                    name, None, o.name_full, "Toggles outfit piece on and off", default)
+                    name, None, toggle_label, "Toggles outfit piece on and off", default)
                 self.ui_setup_toggle(
                     name+"_lock", None, "", "Locks the outfit piece to be visible even when changing outfits", default_lock)
-                variables = [{"name": "chui_outfit", "path": "%s.outfits_enum" % (key)}, {"name": "chui_object", "path": "%s.%s" % (key, name)}]
+                variables = [{"name": "chui_outfit", "path": "%s.outfits_enum" % (
+                    key)}, {"name": "chui_object", "path": "%s.%s" % (key, name)}]
                 lock_expression = "chui_lock==1"
-                expression = "not (chui_object == 1 and (chui_outfit ==%i or chui_lock==1))" % (index)
+                expression = "not (chui_object == 1 and (chui_outfit ==%i or chui_lock==1))" % (
+                    index)
 
                 is_top_child = False
                 if o.parent:
@@ -145,23 +159,29 @@ class CharacterUI(PropertyGroup):
                             item["driver_id"] = new_items
 
                         for (i, o) in enumerate(item["driver_id"]):
-                            expression = "%schui_object_%i==0%s" % (expression, i, " or " if i < len(item["driver_id"]) - 1 else "")
-                            variables_viewport.append({"name":  "chui_object_%i" % (i), "path": "hide_viewport", "driver_id": o})
-                            variables_render.append({"name":  "chui_object_%i" % (i), "path": "hide_render", "driver_id": o})
+                            expression = "%schui_object_%i==0%s" % (
+                                expression, i, " or " if i < len(item["driver_id"]) - 1 else "")
+                            variables_viewport.append({"name":  "chui_object_%i" % (
+                                i), "path": "hide_viewport", "driver_id": o})
+                            variables_render.append({"name":  "chui_object_%i" % (
+                                i), "path": "hide_render", "driver_id": o})
 
                         if key == "character_ui_masks":
                             if "name" not in item:
                                 name = item["modifier"]
                                 item["name"] = name
                                 del item["modifier"]
-                            CharacterUIUtils.create_driver(None, body.modifiers[item["name"]], "show_viewport", expression, variables_viewport)
-                            CharacterUIUtils.create_driver(None, body.modifiers[item["name"]], "show_render", expression, variables_render)
+                            CharacterUIUtils.create_driver(
+                                None, body.modifiers[item["name"]], "show_viewport", expression, variables_viewport)
+                            CharacterUIUtils.create_driver(
+                                None, body.modifiers[item["name"]], "show_render", expression, variables_render)
                         else:
                             if "name" not in item:
                                 name = item["shape_key"]
                                 item["name"] = name
                                 del item["shape_key"]
-                            CharacterUIUtils.create_driver(None, body.data.shape_keys.key_blocks[item["name"]], "value", expression, variables_render)
+                            CharacterUIUtils.create_driver(
+                                None, body.data.shape_keys.key_blocks[item["name"]], "value", expression, variables_render)
 
     @classmethod
     def build_hair(self, ch, key):
@@ -300,7 +320,7 @@ class CharacterUIUtils:
     def render_outfit_piece(o, element, props, is_child=False):
         "recursively render outfit piece buttons"
         row = element.row(align=True)
-        name = o.name.replace(" ", "_")+"_outfit_toggle"
+        name = o.name.replace(".", "-").replace(" ", "_")+"_outfit_toggle"
         if o.data:
             CharacterUIUtils.safe_render(row, props, name, toggle=True, icon="DOWNARROW_HLT" if (props[name] and ("settings" in o.data or len(
                 o.children))) else ("RIGHTARROW" if not props[name] and ("settings" in o.data or len(o.children)) else "NONE"))
@@ -341,7 +361,8 @@ class CharacterUIUtils:
             if "visibility" in g:
                 expression = g["visibility"]["expression"]
                 for var in g["visibility"]["variables"]:
-                    expression = expression.replace(str(var["variable"]), str(var["data_path"]))
+                    expression = expression.replace(
+                        str(var["variable"]), str(var["data_path"]))
                 render = eval(expression)
             if render:
                 box = layout.box()
@@ -363,7 +384,8 @@ class CharacterUIUtils:
                             if "expression" in a["visibility"]:
                                 expression_a = a["visibility"]["expression"]
                                 for var in a["visibility"]["variables"]:
-                                    expression_a = expression_a.replace(var["variable"], var["data_path"])
+                                    expression_a = expression_a.replace(
+                                        var["variable"], var["data_path"])
                                 try:
                                     render_attribute = eval(expression_a)
                                 except:
@@ -382,7 +404,8 @@ class CharacterUIUtils:
                             icon = a["icon"] if "icon" in a else "NONE"
                             if a['name']:
                                 try:
-                                    row.prop(eval(path), prop, text=a['name'], invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon)
+                                    row.prop(eval(
+                                        path), prop, text=a['name'], invert_checkbox=invert_checkbox, toggle=toggle, slider=slider, icon=icon)
                                 except:
                                     print("couldn't render ", path, " prop")
                             else:
@@ -600,14 +623,16 @@ class VIEW3D_PT_physics_misc_panel(VIEW3D_PT_characterUI):
         if ch:
             if "character_ui_cages" in ch.data:
                 if "cages" in ch.data["character_ui_cages"]:
-                    out = list(filter(lambda x: "OP3" in x, ch.data["character_ui_cages"]["cages"]))
+                    out = list(filter(lambda x: "OP3" in x,
+                               ch.data["character_ui_cages"]["cages"]))
                     return len(out) > 0
         return False
 
     def draw(self, context):
         layout = self.layout
         ch = CharacterUIUtils.get_character()
-        CharacterUIUtils.render_cages(layout, ch.data["character_ui_cages"]["cages"], 3)
+        CharacterUIUtils.render_cages(
+            layout, ch.data["character_ui_cages"]["cages"], 3)
 
 
 class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
@@ -635,35 +660,10 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
         box = self.layout.column().box()
         ch = CharacterUIUtils.get_character()
         if ch:
-            if rig_layers_key in ch.data:
-                # sorting "stolen" from CloudRig https://gitlab.com/blender/CloudRig/-/blob/a16df00d5da51d19f720f3e5fe917a84a85883a0/generation/cloudrig.py
-                layer_data = ch.data[rig_layers_key]
-                if type(layer_data) == list:
-                    box.label(text="Layers")
-                    rig_layers = [dict(l) for l in layer_data]
-
-                    for i, l in enumerate(rig_layers):
-                        # When the Rigify addon is not enabled, finding the original index after sorting is impossible, so just store it.
-                        l['index'] = i
-                        if 'row' not in l:
-                            l['row'] = 1
-
-                    sorted_layers = sorted(rig_layers, key=lambda l: l['row'])
-                    sorted_layers = [
-                        l for l in sorted_layers if 'name' in l and l['name'] != " "]
-                    current_row_index = -1
-                    row = box.row()
-                    for rig_layer in sorted_layers:
-                        if rig_layer['name'] in ["", " "]:
-                            continue
-                        if rig_layer['name'].startswith("$"):
-                            continue
-
-                        if rig_layer['row'] > current_row_index:
-                            current_row_index = rig_layer['row']
-                            row = box.row()
-                        row.prop(
-                            ch.data, "layers", index=rig_layer['index'], toggle=True, text=rig_layer['name'])
+            if ch.type == "ARMATURE":
+                box.label(text="Layers")
+                box.template_bone_collection_tree()
+                
             if attributes_key in ch:
                 if "rig" in ch[attributes_key]:
                     attributes_box = self.layout.box()
@@ -722,16 +722,20 @@ class VIEW3D_PT_links(VIEW3D_PT_characterUI):
                 column = box.column(align=True)
                 for link in data[links_key][section].to_dict():
                     try:
-                        column.operator("wm.url_open", text=link, icon=data[links_key][section][link][0]).url = data[links_key][section][link][1]
+                        column.operator(
+                            "wm.url_open", text=link, icon=data[links_key][section][link][0]).url = data[links_key][section][link][1]
                     except:
-                        column.operator("wm.url_open", text=link).url = data[links_key][section][link][1]
+                        column.operator(
+                            "wm.url_open", text=link).url = data[links_key][section][link][1]
         box_model_info = layout.box()
         box_model_info.label(text=custom_label, icon="ARMATURE_DATA")
         if "character_ui_generation_date" in data:
-            box_model_info.label(text="UI Generation date: %s" % (data["character_ui_generation_date"]), icon="TIME")
+            box_model_info.label(text="UI Generation date: %s" % (
+                data["character_ui_generation_date"]), icon="TIME")
         if "character_ui_char_version" in data:
             if len(data["character_ui_char_version"]):
-                box_model_info.label(text="Version: %s" % (data["character_ui_char_version"]), icon="BLENDER")
+                box_model_info.label(text="Version: %s" % (
+                    data["character_ui_char_version"]), icon="BLENDER")
 
         box_ui_info = layout.box()
         box_ui_info.label(text="UI", icon="MENU_PANEL")
