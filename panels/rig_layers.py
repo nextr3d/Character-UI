@@ -49,20 +49,33 @@ class VIEW3D_PT_character_ui_rig_layers(Panel):
         ch = context.scene.character_ui_object
         if ch:
             if ch.type == "ARMATURE":
-                box.prop(context.scene, "character_ui_rig_layers_key")
-                for i in range(32):
-                    row = box.row(align=True)
-                    icon = "HIDE_ON"
-                    if "character_ui_row_visible_%i" % (i) in context.scene:
-                        if context.scene["character_ui_row_visible_%i" % (i)]:
-                            icon = "HIDE_OFF"
-                    first_col = row.column(align=True)
-                    row.column(align=True).prop(
-                        context.scene, "character_ui_row_visible_%i" % (i), toggle=True, icon=icon)
-                    row.column(align=True).prop(context.scene,
-                                                "character_ui_row_name_%i" % (i))
-                    row.column(align=True).prop(context.scene,
-                                                "character_ui_row_index_%i" % (i))
+                active_bcoll = ch.data.collections.active
+
+                row = layout.row()
+                row.template_bone_collection_tree()
+
+                col = row.column(align=True)
+                col.operator("armature.collection_add", icon='ADD', text="")
+                col.operator("armature.collection_remove", icon='REMOVE', text="")
+
+                col.separator()
+
+                col.menu("ARMATURE_MT_collection_context_menu", icon='DOWNARROW_HLT', text="")
+
+                if active_bcoll:
+                    col.separator()
+                    col.operator("armature.collection_move", icon='TRIA_UP', text="").direction = 'UP'
+                    col.operator("armature.collection_move", icon='TRIA_DOWN', text="").direction = 'DOWN'
+
+                row = layout.row()
+
+                sub = row.row(align=True)
+                sub.operator("armature.collection_assign", text="Assign")
+                sub.operator("armature.collection_unassign", text="Remove")
+
+                sub = row.row(align=True)
+                sub.operator("armature.collection_select", text="Select")
+                sub.operator("armature.collection_deselect", text="Deselect")
 
             else:
                 box.label(text="Object is not an armature", icon="ERROR")

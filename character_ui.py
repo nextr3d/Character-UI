@@ -21,8 +21,8 @@ bl_info = {
     "name": "Character UI Script",
     "description": "Script rendering UI for your character",
     "author": "nextr",
-    "version": (5, 3, 0),
-    "blender": (3, 0, 0),
+    "version": (5, 4, 0),
+    "blender": (4, 3, 0),
     "branch": "outfits"
 }
 
@@ -661,35 +661,10 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
         box = self.layout.column().box()
         ch = CharacterUIUtils.get_character()
         if ch:
-            if rig_layers_key in ch.data:
-                # sorting "stolen" from CloudRig https://gitlab.com/blender/CloudRig/-/blob/a16df00d5da51d19f720f3e5fe917a84a85883a0/generation/cloudrig.py
-                layer_data = ch.data[rig_layers_key]
-                if type(layer_data) == list:
-                    box.label(text="Layers")
-                    rig_layers = [dict(l) for l in layer_data]
-
-                    for i, l in enumerate(rig_layers):
-                        # When the Rigify addon is not enabled, finding the original index after sorting is impossible, so just store it.
-                        l['index'] = i
-                        if 'row' not in l:
-                            l['row'] = 1
-
-                    sorted_layers = sorted(rig_layers, key=lambda l: l['row'])
-                    sorted_layers = [
-                        l for l in sorted_layers if 'name' in l and l['name'] != " "]
-                    current_row_index = -1
-                    row = box.row()
-                    for rig_layer in sorted_layers:
-                        if rig_layer['name'] in ["", " "]:
-                            continue
-                        if rig_layer['name'].startswith("$"):
-                            continue
-
-                        if rig_layer['row'] > current_row_index:
-                            current_row_index = rig_layer['row']
-                            row = box.row()
-                        row.prop(
-                            ch.data, "layers", index=rig_layer['index'], toggle=True, text=rig_layer['name'])
+            if ch.type == "ARMATURE":
+                box.label(text="Layers")
+                box.template_bone_collection_tree()
+                
             if attributes_key in ch:
                 if "rig" in ch[attributes_key]:
                     attributes_box = self.layout.box()
