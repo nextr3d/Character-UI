@@ -645,15 +645,13 @@ class VIEW3D_PT_rig_layers(VIEW3D_PT_characterUI):
         ch = CharacterUIUtils.get_character()
         if ch:
             if ch == context.active_object or always_show:
+                if ch.type == "ARMATURE":
+                    return True
+
                 if attributes_key in ch:
                     if "rig" in ch[attributes_key]:
                         if len(ch[attributes_key]["rig"]):
                             return True
-
-                if rig_layers_key in ch.data:
-                    if type(ch.data[rig_layers_key]) == list:
-                        return len(ch.data[rig_layers_key])
-
         return False
 
     def draw(self, context):
