@@ -23,7 +23,6 @@ bl_info = {
     "author": "nextr",
     "version": (5, 4, 0),
     "blender": (4, 3, 0),
-    "branch": "outfits"
 }
 
 
